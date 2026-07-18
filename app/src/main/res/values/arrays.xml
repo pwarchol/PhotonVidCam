@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string-array name="sensor_mode_key_presets">
+        <item>vivo.control.forceSensorMode</item>
+        <item>com.oplus.engineercamera.agingtest.mode.select</item>
+    </string-array>
+
     <string-array name="cfapat_entries">
         <item>AUTO</item>
         <item>RGGB</item>
@@ -133,6 +138,7 @@
         <item>Lock Video Params 1</item>
         <item>Lock Video Params 2</item>
         <item>Session Type (OpCode) OFF</item>
+        <item>Sensor Mode</item>
     </string-array>
 
     <string-array name="function_one_entryValues">
@@ -145,6 +151,7 @@
         <item>Lock Video Params 1</item>
         <item>Lock Video Params 2</item>
         <item>Session Type (OpCode) OFF</item>
+        <item>Sensor Mode</item>
     </string-array>
 
     <string-array name="location_geotag_entryValues">

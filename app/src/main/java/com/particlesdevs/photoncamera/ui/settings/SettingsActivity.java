@@ -33,6 +33,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.EditTextPreference;
+import androidx.preference.EditTextPreferenceDialogFragmentCompat;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragmentCompat;
@@ -82,6 +83,7 @@ public class SettingsActivity extends BaseActivity implements
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.general_preferences, rootKey);
+            configureSensorModeKeyPreference();
 
             // RAW format list building
             ListPreference rawPreference = findPreference(getString(R.string.pref_raw_format_key));
@@ -322,12 +324,6 @@ public class SettingsActivity extends BaseActivity implements
                 entriesFunctionTwo.add("Qualcomm ADRC Off");
                 entryValuesFunctionTwo.add("Qualcomm ADRC Off");
             }
-            if (PhotonCamera.hasQucommSensorMode) {
-                entriesFunctionOne.add("Qualcomm Sensor Mode");
-                entryValuesFunctionOne.add("Qualcomm Sensor Mode");
-                entriesFunctionTwo.add("Qualcomm Sensor Mode");
-                entryValuesFunctionTwo.add("Qualcomm Sensor Mode");
-            }
             if (PhotonCamera.hasVivoZeissColor) {
                 entriesFunctionOne.add("Vivo Zeiss Color");
                 entryValuesFunctionOne.add("Vivo Zeiss Color");
@@ -339,12 +335,6 @@ public class SettingsActivity extends BaseActivity implements
                 entryValuesFunctionOne.add("Vivo Pro Mode");
                 entriesFunctionTwo.add("Vivo Pro Mode");
                 entryValuesFunctionTwo.add("Vivo Pro Mode");
-            }
-            if (PhotonCamera.hasVivoSensorMode) {
-                entriesFunctionOne.add("Vivo Sensor Mode");
-                entryValuesFunctionOne.add("Vivo Sensor Mode");
-                entriesFunctionTwo.add("Vivo Sensor Mode");
-                entryValuesFunctionTwo.add("Vivo Sensor Mode");
             }
             if (PhotonCamera.hasVivoDistortionCorrection) {
                 entriesFunctionOne.add("Vivo Distortion Correction");
@@ -373,6 +363,41 @@ public class SettingsActivity extends BaseActivity implements
                     functionTwoPreference.setValue(entryPrevValues.get(0).toString());
                 }
             }
+        }
+
+        private void configureSensorModeKeyPreference() {
+            EditTextPreference sensorModeKeyPreference =
+                    findPreference(getString(R.string.pref_sensor_mode_vendor_key));
+            if (sensorModeKeyPreference == null) {
+                return;
+            }
+
+            String[] presets = getResources().getStringArray(R.array.sensor_mode_key_presets);
+            CharSequence[] options = new CharSequence[presets.length + 1];
+            System.arraycopy(presets, 0, options, 0, presets.length);
+            options[presets.length] = getString(R.string.sensor_mode_custom_key);
+
+            sensorModeKeyPreference.setOnPreferenceClickListener(preference -> {
+                new AlertDialog.Builder(requireContext())
+                        .setTitle(sensorModeKeyPreference.getTitle())
+                        .setItems(options, (dialog, which) -> {
+                            if (which < presets.length) {
+                                String value = presets[which];
+                                if (sensorModeKeyPreference.callChangeListener(value)) {
+                                    sensorModeKeyPreference.setText(value);
+                                }
+                                return;
+                            }
+
+                            EditTextPreferenceDialogFragmentCompat editDialog =
+                                    EditTextPreferenceDialogFragmentCompat.newInstance(
+                                            sensorModeKeyPreference.getKey());
+                            editDialog.setTargetFragment(this, 0);
+                            editDialog.show(getParentFragmentManager(), "SensorModeKeyEditDialog");
+                        })
+                        .show();
+                return true;
+            });
         }
     }
 

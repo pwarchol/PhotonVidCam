@@ -466,8 +466,8 @@ public class DngCreator {
         short[] blackLevel = new short[4];
         for (int i = 0; i < 4; i++) {
             //if ((PhotonCamera.getSettings().dngBlackLevel >= 0) && (PhotonCamera.getSettings().frameCount == 1)) {
-            if (PhotonCamera.getSettings().dngBlackLevel >= 0) {
-                blackLevel[i] = (short) PhotonCamera.getSettings().dngBlackLevel;
+            if (PhotonCamera.getSettings().getDngBlackLevel() >= 0) {
+                blackLevel[i] = (short) PhotonCamera.getSettings().getDngBlackLevel();
             } else if (parameters.whiteLevel <= parameters.blackLevel[i]) {
                 blackLevel[i] = 64;
             } else {
@@ -508,10 +508,10 @@ public class DngCreator {
         setFocalLength(parameters.focalLength);
         setAperture(parameters.aperture);
         setBlackLevel(blackLevel);
-        if (PhotonCamera.getSettings().dngWhiteLevel == -1) {
+        if (PhotonCamera.getSettings().getDngWhiteLevel() == -1) {
             setWhiteLevel(parameters.whiteLevel);
         } else {
-            setWhiteLevel(PhotonCamera.getSettings().dngWhiteLevel);
+            setWhiteLevel(PhotonCamera.getSettings().getDngWhiteLevel());
         }
         setCalibrationIlluminant1((short) parameters.calibrationIlluminant1);
         setCalibrationIlluminant2((short) parameters.calibrationIlluminant2);
@@ -524,7 +524,7 @@ public class DngCreator {
         setAsShotNeutral(toDouble(parameters.whitePoint));
         setCFAPattern(parameters.cfaPattern);
         setOrientation(parameters.cameraRotation/90);
-        if ((PhotonCamera.getSettings().sessionType != 36875) && (PhotonCamera.getSettings().shadingMode != 0)) {
+        if ((PhotonCamera.getSettings().getSessionType() != 36875) && (PhotonCamera.getSettings().shadingMode != 0)) {
             setGainMap(parameters.gainMap,
                     parameters.sensorPix.top,
                     parameters.sensorPix.left,

@@ -55,7 +55,7 @@ public class CameraFragmentModel extends BaseObservable {
     public void onFunctionOneClicked() {
         if (PhotonCamera.getCaptureController() != null) {
             PhotonCamera.getCaptureController().functionOne();
-            functionOneOn = !functionOneOn;
+            functionOneOn = PhotonCamera.getCaptureController().mIsFunctionOneOn;
             notifyChange();
         }
     }
@@ -63,7 +63,7 @@ public class CameraFragmentModel extends BaseObservable {
     public void onFunctionTwoClicked() {
         if (PhotonCamera.getCaptureController() != null) {
             PhotonCamera.getCaptureController().functionTwo();
-            functionTwoOn = !functionTwoOn;
+            functionTwoOn = PhotonCamera.getCaptureController().mIsFunctionTwoOn;
             notifyChange();
         }
     }
@@ -523,7 +523,7 @@ public class CameraFragmentModel extends BaseObservable {
         Context context = view.getContext();
         String[] entries = context.getResources().getStringArray(R.array.function_one_entries);
         String[] entryValues = context.getResources().getStringArray(R.array.function_one_entryValues);
-        String currentVal = PreferenceKeys.getFunctionOneValue();
+        String currentVal = PhotonCamera.getSettings().functionOne;
 
         List<CharSequence> entriesFunction = new ArrayList<>(Arrays.asList(entries));
         List<CharSequence> entryValuesFunction = new ArrayList<>(Arrays.asList(entryValues));
@@ -588,10 +588,6 @@ public class CameraFragmentModel extends BaseObservable {
             entriesFunction.add("Qualcomm ADRC Off");
             entryValuesFunction.add("Qualcomm ADRC Off");
         }
-        if (PhotonCamera.hasQucommSensorMode) {
-            entriesFunction.add("Qualcomm Sensor Mode");
-            entryValuesFunction.add("Qualcomm Sensor Mode");
-        }
         if (PhotonCamera.hasVivoZeissColor) {
             entriesFunction.add("Vivo Zeiss Color");
             entryValuesFunction.add("Vivo Zeiss Color");
@@ -599,10 +595,6 @@ public class CameraFragmentModel extends BaseObservable {
         if (PhotonCamera.hasVivoProMode) {
             entriesFunction.add("Vivo Pro Mode");
             entryValuesFunction.add("Vivo Pro Mode");
-        }
-        if (PhotonCamera.hasVivoSensorMode) {
-            entriesFunction.add("Vivo Sensor Mode");
-            entryValuesFunction.add("Vivo Sensor Mode");
         }
         if (PhotonCamera.hasVivoDistortionCorrection) {
             entriesFunction.add("Vivo Distortion Correction");
@@ -638,7 +630,7 @@ public class CameraFragmentModel extends BaseObservable {
         Context context = view.getContext();
         String[] entries = context.getResources().getStringArray(R.array.function_one_entries);
         String[] entryValues = context.getResources().getStringArray(R.array.function_one_entryValues);
-        String currentVal = PreferenceKeys.getFunctionTwoValue();
+        String currentVal = PhotonCamera.getSettings().functionTwo;
 
         List<CharSequence> entriesFunction = new ArrayList<>(Arrays.asList(entries));
         List<CharSequence> entryValuesFunction = new ArrayList<>(Arrays.asList(entryValues));
@@ -703,10 +695,6 @@ public class CameraFragmentModel extends BaseObservable {
             entriesFunction.add("Qualcomm ADRC Off");
             entryValuesFunction.add("Qualcomm ADRC Off");
         }
-        if (PhotonCamera.hasQucommSensorMode) {
-            entriesFunction.add("Qualcomm Sensor Mode");
-            entryValuesFunction.add("Qualcomm Sensor Mode");
-        }
         if (PhotonCamera.hasVivoZeissColor) {
             entriesFunction.add("Vivo Zeiss Color");
             entryValuesFunction.add("Vivo Zeiss Color");
@@ -714,10 +702,6 @@ public class CameraFragmentModel extends BaseObservable {
         if (PhotonCamera.hasVivoProMode) {
             entriesFunction.add("Vivo Pro Mode");
             entryValuesFunction.add("Vivo Pro Mode");
-        }
-        if (PhotonCamera.hasVivoSensorMode) {
-            entriesFunction.add("Vivo Sensor Mode");
-            entryValuesFunction.add("Vivo Sensor Mode");
         }
         if (PhotonCamera.hasVivoDistortionCorrection) {
             entriesFunction.add("Vivo Distortion Correction");

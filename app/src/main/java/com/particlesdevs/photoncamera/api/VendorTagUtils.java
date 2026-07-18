@@ -149,7 +149,6 @@ public class VendorTagUtils {
         PhotonCamera.hasXiaomiSuperResolution = false;
         PhotonCamera.hasVivoZeissColor = false;
         PhotonCamera.hasVivoProMode = false;
-        PhotonCamera.hasVivoSensorMode = false;
         PhotonCamera.hasVivoDistortionCorrection = false;
         PhotonCamera.hasQucommAdrcOff = false;
         PhotonCamera.hasEisRealtime = false;
@@ -234,6 +233,8 @@ public class VendorTagUtils {
                         builder.set(demosaicMode, (byte) PhotonCamera.getSpecific().specificSetting.androidDemosaicMode);
                     }
                 }
+
+                applySensorMode(builder);
 
                 byte enable = 1;
                 if (PhotonCamera.isXiaomi) {
@@ -721,32 +722,6 @@ public class VendorTagUtils {
                     //builder.set(hdrPref, 1);
                 }
 
-                if (PhotonCamera.getSpecific().specificSetting.sensorModes != null) {
-                    for (String id : PhotonCamera.getSpecific().specificSetting.sensorModes) {
-                        try {
-                            String camID = "";
-                            String sensorMode = "";
-                            if (id.contains("-")) {
-                                camID = id.split("-")[0];
-                                sensorMode = id.split("-")[1];
-                            }
-
-                            if (PhotonCamera.getSettings().mCameraID.contains(camID)) {
-                                var sensorModeKey = new CaptureRequest.Key<>(PhotonCamera.getSpecific().specificSetting.sensorModeKey, Integer.class);
-                                if (isSupported(builder, sensorModeKey)) {
-                                    PhotonCamera.hasQucommSensorMode = true;
-                                    if (PhotonCamera.isQucommSensorModeOn && !sensorMode.equals("x")) {
-                                        builder.set(sensorModeKey, Integer.valueOf(sensorMode));
-                                    }
-                                }
-                                break;
-                            }
-                        } catch (Exception ignored) {
-
-                        }
-                    }
-                }
-
                 /*CaptureRequest.Key perfKey = new CaptureRequest.Key<>("com.qti.chi.enableadrcpath.enableADRCPath", Integer.class);
                 if (isSupported(builder, perfKey)) {
                     PhotonCamera.hasQucommAdrcOff = true;
@@ -1045,32 +1020,6 @@ public class VendorTagUtils {
                         builder.set(vivoUltraHighRes, PhotonCamera.getSpecific().specificSetting.vivoUseUltraHighResolution ? 1: 0);
                     }
 
-                    if (PhotonCamera.getSpecific().specificSetting.sensorModes != null) {
-                        for (String id : PhotonCamera.getSpecific().specificSetting.sensorModes) {
-                            try {
-                                String camID = "";
-                                String sensorMode = "";
-                                if (id.contains("-")) {
-                                    camID = id.split("-")[0];
-                                    sensorMode = id.split("-")[1];
-                                }
-
-                                if (PhotonCamera.getSettings().mCameraID.contains(camID)) {
-                                    var vivoControlForceSensorMode = new CaptureRequest.Key<>(PhotonCamera.getSpecific().specificSetting.sensorModeKey, Integer.class);
-                                    if (isSupported(builder, vivoControlForceSensorMode)) {
-                                        PhotonCamera.hasVivoSensorMode = true;
-                                        if (PhotonCamera.isVivoSensorModeOn && !sensorMode.equals("x")) {
-                                            builder.set(vivoControlForceSensorMode, Integer.valueOf(sensorMode));
-                                        }
-                                    }
-                                    break;
-                                }
-                            } catch (Exception ignored) {
-
-                            }
-                        }
-                    }
-
                     var vivoAiGcOn = new CaptureRequest.Key<>("vivo.control.aigcOn", byte.class);
                     if (isSupported(builder, vivoAiGcOn)) {
                         //builder.set(vivoAiGcOn, (byte) 1);
@@ -1232,6 +1181,19 @@ public class VendorTagUtils {
         if (useMaximumResolutionKey)
         {
             builder.set(CaptureRequest.SENSOR_PIXEL_MODE, CaptureRequest.SENSOR_PIXEL_MODE_MAXIMUM_RESOLUTION);
+        }
+    }
+
+    private static void applySensorMode(CaptureRequest.Builder builder) {
+        Settings settings = PhotonCamera.getSettings();
+        if (!settings.isSensorModeActive()) {
+            return;
+        }
+
+        CaptureRequest.Key<Integer> sensorModeKey =
+                new CaptureRequest.Key<>(settings.sensorModeKey.trim(), Integer.class);
+        if (isSupported(builder, sensorModeKey)) {
+            builder.set(sensorModeKey, settings.sensorModeValue);
         }
     }
 

@@ -4,6 +4,8 @@ import com.particlesdevs.photoncamera.app.PhotonCamera;
 import com.particlesdevs.photoncamera.settings.PreferenceKeys;
 import com.particlesdevs.photoncamera.util.Allocator;
 
+import java.util.Objects;
+
 import static android.hardware.camera2.CaptureRequest.NOISE_REDUCTION_MODE_OFF;
 
 public class Settings {
@@ -135,6 +137,16 @@ public class Settings {
     public int sessionTypeVideo = 0;
     public int dngBlackLevel = -1;
     public int dngWhiteLevel = -1;
+    public boolean sensorModeOn = false;
+    public boolean sensorModeDefaultOn = false;
+    public String sensorModeKey = "";
+    public int sensorModeValue = -1;
+    public int sensorModeSessionType = 0;
+    public int sensorModeSessionTypeVideo = 0;
+    public int sensorModeDngBlackLevel = -1;
+    public int sensorModeDngWhiteLevel = -1;
+    private boolean sensorModeStateInitialized = false;
+    private String sensorModeCameraId = null;
     public String photoRange = "Full";
     public String photoVideoCodec = "HEVC";
     public String swColorSpace = "DISPLAY_P3";
@@ -227,6 +239,21 @@ public class Settings {
         sessionTypeVideo = PreferenceKeys.getSessionTypeVideo();
         dngBlackLevel = PreferenceKeys.getDngBlackLevel();
         dngWhiteLevel = PreferenceKeys.getDngWhiteLevel();
+        boolean newSensorModeDefaultOn = PreferenceKeys.isSensorModeDefaultOn();
+        if (!sensorModeStateInitialized
+                || (PreferenceKeys.isPerLensSettingsOn() && !Objects.equals(sensorModeCameraId, mCameraID))
+                || sensorModeDefaultOn != newSensorModeDefaultOn) {
+            sensorModeDefaultOn = newSensorModeDefaultOn;
+            sensorModeOn = sensorModeDefaultOn;
+            sensorModeCameraId = mCameraID;
+            sensorModeStateInitialized = true;
+        }
+        sensorModeKey = PreferenceKeys.getSensorModeKey();
+        sensorModeValue = PreferenceKeys.getSensorModeValue();
+        sensorModeSessionType = PreferenceKeys.getSensorModeSessionType();
+        sensorModeSessionTypeVideo = PreferenceKeys.getSensorModeSessionTypeVideo();
+        sensorModeDngBlackLevel = PreferenceKeys.getSensorModeDngBlackLevel();
+        sensorModeDngWhiteLevel = PreferenceKeys.getSensorModeDngWhiteLevel();
         useP3 = PreferenceKeys.isP3On();
         // QualityDoesMatter - Video
         videoBitrate = PreferenceKeys.getVideoBitrate();
@@ -295,6 +322,34 @@ public class Settings {
         swColorSpace = PreferenceKeys.getSwColorSpace();
         alternateImageReaderFlags = PreferenceKeys.isAlternateImageReaderFlagsOn();
         useHqSubsampling = PreferenceKeys.isHqSubsamplingOn();
+    }
+
+    public int getSessionType() {
+        return sensorModeOn ? sensorModeSessionType : sessionType;
+    }
+
+    public int getSessionTypeVideo() {
+        return sensorModeOn ? sensorModeSessionTypeVideo : sessionTypeVideo;
+    }
+
+    public int getDngBlackLevel() {
+        return sensorModeOn ? sensorModeDngBlackLevel : dngBlackLevel;
+    }
+
+    public int getDngWhiteLevel() {
+        return sensorModeOn ? sensorModeDngWhiteLevel : dngWhiteLevel;
+    }
+
+    public boolean hasSensorModeConfiguration() {
+        return sensorModeKey != null && !sensorModeKey.trim().isEmpty() && sensorModeValue >= 0;
+    }
+
+    public boolean isSensorModeActive() {
+        return sensorModeOn && hasSensorModeConfiguration();
+    }
+
+    public void toggleSensorMode() {
+        sensorModeOn = !sensorModeOn;
     }
 
     public void saveID() {

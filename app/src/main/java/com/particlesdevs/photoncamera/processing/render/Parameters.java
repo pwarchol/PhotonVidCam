@@ -244,11 +244,11 @@ public class Parameters {
         if (result != null) {
             boolean isHuawei = Build.BRAND.equals("Huawei");
 
-            if (PhotonCamera.getSettings().dngBlackLevel >= 0) {
-                blackLevel[0] = PhotonCamera.getSettings().dngBlackLevel;
-                blackLevel[1] = PhotonCamera.getSettings().dngBlackLevel;
-                blackLevel[2] = PhotonCamera.getSettings().dngBlackLevel;
-                blackLevel[3] = PhotonCamera.getSettings().dngBlackLevel;
+            if (PhotonCamera.getSettings().getDngBlackLevel() >= 0) {
+                blackLevel[0] = PhotonCamera.getSettings().getDngBlackLevel();
+                blackLevel[1] = PhotonCamera.getSettings().getDngBlackLevel();
+                blackLevel[2] = PhotonCamera.getSettings().getDngBlackLevel();
+                blackLevel[3] = PhotonCamera.getSettings().getDngBlackLevel();
                 usedDynamic = true;
             } else {
                 float[] dynbl = result.get(CaptureResult.SENSOR_DYNAMIC_BLACK_LEVEL);
@@ -653,35 +653,13 @@ public class Parameters {
             metaData += "\n 16 Bit HDRX=Off";
         }
 
-        if (PhotonCamera.isSessionTypeOn && (PhotonCamera.getSettings().sessionType > 0)) {
-            metaData += "\n OpCode=" + PhotonCamera.getSettings().sessionType;
+        if (PhotonCamera.isSessionTypeOn && (PhotonCamera.getSettings().getSessionType() > 0)) {
+            metaData += "\n OpCode=" + PhotonCamera.getSettings().getSessionType();
         }
 
-        if (PhotonCamera.getSpecific().specificSetting.sensorModes != null) {
-            String sensorMode = "";
-            for (String id : PhotonCamera.getSpecific().specificSetting.sensorModes) {
-                try {
-                    String camID = "";
-                    if (id.contains("-")) {
-                        camID = id.split("-")[0];
-                        sensorMode = id.split("-")[1];
-                    }
-
-                    if (PhotonCamera.getSettings().mCameraID.equals(camID)) {
-                        break;
-                    }
-                } catch (Exception ignored) {
-
-                }
-            }
-
-            if (PhotonCamera.isQucommSensorModeOn) {
-                metaData += "\n QcomSensorMode=" + sensorMode;
-            }
-
-            if (PhotonCamera.isVivoSensorModeOn) {
-                metaData += "\n VivoSensorMode=" + sensorMode;
-            }
+        if (PhotonCamera.getSettings().isSensorModeActive()) {
+            metaData += "\n SensorModeKey=" + PhotonCamera.getSettings().sensorModeKey;
+            metaData += "\n SensorModeValue=" + PhotonCamera.getSettings().sensorModeValue;
         }
 
         metaData += getTunableSettingsString();
