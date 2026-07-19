@@ -364,9 +364,19 @@ public class SettingsActivity extends BaseActivity implements
             }
         }
 
+    }
+
+    public static class SensorModesSettingsFragment extends PreferenceFragmentCompat {
+        @Override
+        public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+            setPreferencesFromResource(R.xml.sensor_modes_preferences, rootKey);
+        }
+
         @Override
         public void onDisplayPreferenceDialog(@NonNull Preference preference) {
-            if (getString(R.string.pref_sensor_mode_vendor_key).equals(preference.getKey())
+            String key = preference.getKey();
+            if ((getString(R.string.pref_sensor_mode_1_vendor_key).equals(key)
+                    || getString(R.string.pref_sensor_mode_2_vendor_key).equals(key))
                     && preference instanceof EditTextPreference) {
                 showSensorModeKeyOptions((EditTextPreference) preference);
                 return;
@@ -1491,7 +1501,8 @@ public class SettingsActivity extends BaseActivity implements
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction()
                 .setCustomAnimations(R.anim.animate_slide_left_enter, R.anim.animate_slide_left_exit
                         , R.anim.animate_card_enter, R.anim.animate_slide_right_exit);
-        SettingsFragment fragment = new SettingsFragment();
+        PreferenceFragmentCompat fragment = preferenceFragmentCompat instanceof SensorModesSettingsFragment
+                ? new SensorModesSettingsFragment() : new SettingsFragment();
         Bundle args = new Bundle();
         args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, preferenceScreen.getKey());
         fragment.setArguments(args);
@@ -1527,6 +1538,17 @@ public class SettingsActivity extends BaseActivity implements
                 generalSettingsButton.setOnPreferenceClickListener(preference -> {
                     getParentFragmentManager().beginTransaction()
                             .replace(R.id.settings_container, new GeneralSettingsFragment())
+                            .addToBackStack(null)
+                            .commit();
+                    return true;
+                });
+            }
+
+            Preference sensorModesSettingsButton = findPreference("sensor_modes_settings_screen");
+            if (sensorModesSettingsButton != null) {
+                sensorModesSettingsButton.setOnPreferenceClickListener(preference -> {
+                    getParentFragmentManager().beginTransaction()
+                            .replace(R.id.settings_container, new SensorModesSettingsFragment())
                             .addToBackStack(null)
                             .commit();
                     return true;

@@ -137,14 +137,16 @@ public class Settings {
     public int sessionTypeVideo = 0;
     public int dngBlackLevel = -1;
     public int dngWhiteLevel = -1;
-    public boolean sensorModeOn = false;
-    public boolean sensorModeDefaultOn = false;
+    public static final int SENSOR_MODE_OFF = -1;
+    public static final int SENSOR_MODE_1 = 1;
+    public static final int SENSOR_MODE_2 = 2;
+    public int sensorModeOn = SENSOR_MODE_OFF;
+    public int sensorModeDefault = SENSOR_MODE_OFF;
     public String sensorModeKey = "";
     public int sensorModeValue = -1;
-    public int sensorModeSessionType = 0;
-    public int sensorModeSessionTypeVideo = 0;
-    public int sensorModeDngBlackLevel = -1;
-    public int sensorModeDngWhiteLevel = -1;
+    private int defaultCfaPattern = -1;
+    private SensorModeConfiguration sensorMode1 = new SensorModeConfiguration();
+    private SensorModeConfiguration sensorMode2 = new SensorModeConfiguration();
     private boolean sensorModeStateInitialized = false;
     private String sensorModeCameraId = null;
     public String photoRange = "Full";
@@ -193,7 +195,7 @@ public class Settings {
         gain = PreferenceKeys.getGainValue();
         shadows = PreferenceKeys.getFloat(PreferenceKeys.Key.KEY_SHADOWS_SEEKBAR);
         hdrx = PreferenceKeys.isHdrxNrOn();
-        cfaPattern = PreferenceKeys.getCFAValue();
+        defaultCfaPattern = PreferenceKeys.getCFAValue();
         rawSaver = PreferenceKeys.isSaveRaw();
         remosaic = PreferenceKeys.isRemosaicOn();
         eisPhoto = PreferenceKeys.isEisPhotoOn();
@@ -239,21 +241,18 @@ public class Settings {
         sessionTypeVideo = PreferenceKeys.getSessionTypeVideo();
         dngBlackLevel = PreferenceKeys.getDngBlackLevel();
         dngWhiteLevel = PreferenceKeys.getDngWhiteLevel();
-        boolean newSensorModeDefaultOn = PreferenceKeys.isSensorModeDefaultOn();
+        int newSensorModeDefault = PreferenceKeys.getSensorModeDefault();
         if (!sensorModeStateInitialized
                 || (PreferenceKeys.isPerLensSettingsOn() && !Objects.equals(sensorModeCameraId, mCameraID))
-                || sensorModeDefaultOn != newSensorModeDefaultOn) {
-            sensorModeDefaultOn = newSensorModeDefaultOn;
-            sensorModeOn = sensorModeDefaultOn;
+                || sensorModeDefault != newSensorModeDefault) {
+            sensorModeDefault = newSensorModeDefault;
+            sensorModeOn = sensorModeDefault;
             sensorModeCameraId = mCameraID;
             sensorModeStateInitialized = true;
         }
-        sensorModeKey = PreferenceKeys.getSensorModeKey();
-        sensorModeValue = PreferenceKeys.getSensorModeValue();
-        sensorModeSessionType = PreferenceKeys.getSensorModeSessionType();
-        sensorModeSessionTypeVideo = PreferenceKeys.getSensorModeSessionTypeVideo();
-        sensorModeDngBlackLevel = PreferenceKeys.getSensorModeDngBlackLevel();
-        sensorModeDngWhiteLevel = PreferenceKeys.getSensorModeDngWhiteLevel();
+        sensorMode1 = loadSensorModeConfiguration(SENSOR_MODE_1);
+        sensorMode2 = loadSensorModeConfiguration(SENSOR_MODE_2);
+        applySensorModeConfiguration();
         useP3 = PreferenceKeys.isP3On();
         // QualityDoesMatter - Video
         videoBitrate = PreferenceKeys.getVideoBitrate();
@@ -325,31 +324,110 @@ public class Settings {
     }
 
     public int getSessionType() {
-        return sensorModeOn ? sensorModeSessionType : sessionType;
+        SensorModeConfiguration configuration = getActiveSensorModeConfiguration();
+        return configuration == null ? sessionType : configuration.sessionType;
     }
 
     public int getSessionTypeVideo() {
-        return sensorModeOn ? sensorModeSessionTypeVideo : sessionTypeVideo;
+        SensorModeConfiguration configuration = getActiveSensorModeConfiguration();
+        return configuration == null ? sessionTypeVideo : configuration.sessionTypeVideo;
     }
 
     public int getDngBlackLevel() {
-        return sensorModeOn ? sensorModeDngBlackLevel : dngBlackLevel;
+        SensorModeConfiguration configuration = getActiveSensorModeConfiguration();
+        return configuration == null ? dngBlackLevel : configuration.dngBlackLevel;
     }
 
     public int getDngWhiteLevel() {
-        return sensorModeOn ? sensorModeDngWhiteLevel : dngWhiteLevel;
+        SensorModeConfiguration configuration = getActiveSensorModeConfiguration();
+        return configuration == null ? dngWhiteLevel : configuration.dngWhiteLevel;
+    }
+
+    public boolean isDcg1610CropOn() {
+        SensorModeConfiguration configuration = getActiveSensorModeConfiguration();
+        return configuration != null && configuration.dcg1610Crop;
     }
 
     public boolean hasSensorModeConfiguration() {
-        return sensorModeKey != null && !sensorModeKey.trim().isEmpty() && sensorModeValue >= 0;
+        return hasSensorModeConfiguration(sensorModeOn);
+    }
+
+    public boolean hasSensorModeConfiguration(int sensorMode) {
+        SensorModeConfiguration configuration = getSensorModeConfiguration(sensorMode);
+        return configuration != null && configuration.key != null
+                && !configuration.key.trim().isEmpty() && configuration.value >= 0;
     }
 
     public boolean isSensorModeActive() {
-        return sensorModeOn && hasSensorModeConfiguration();
+        return sensorModeOn != SENSOR_MODE_OFF && hasSensorModeConfiguration();
     }
 
-    public void toggleSensorMode() {
-        sensorModeOn = !sensorModeOn;
+    public String getSensorModeKey(int sensorMode) {
+        SensorModeConfiguration configuration = getSensorModeConfiguration(sensorMode);
+        return configuration == null ? "" : configuration.key;
+    }
+
+    public int getSensorModeValue(int sensorMode) {
+        SensorModeConfiguration configuration = getSensorModeConfiguration(sensorMode);
+        return configuration == null ? -1 : configuration.value;
+    }
+
+    public void setSensorMode(int sensorMode) {
+        sensorModeOn = sensorMode == SENSOR_MODE_1 || sensorMode == SENSOR_MODE_2
+                ? sensorMode : SENSOR_MODE_OFF;
+        applySensorModeConfiguration();
+    }
+
+    private SensorModeConfiguration loadSensorModeConfiguration(int sensorMode) {
+        SensorModeConfiguration configuration = new SensorModeConfiguration();
+        configuration.key = PreferenceKeys.getSensorModeKey(sensorMode);
+        configuration.value = PreferenceKeys.getSensorModeValue(sensorMode);
+        configuration.sessionType = PreferenceKeys.getSensorModeSessionType(sensorMode);
+        configuration.sessionTypeVideo = PreferenceKeys.getSensorModeSessionTypeVideo(sensorMode);
+        configuration.dngBlackLevel = PreferenceKeys.getSensorModeDngBlackLevel(sensorMode);
+        configuration.dngWhiteLevel = PreferenceKeys.getSensorModeDngWhiteLevel(sensorMode);
+        configuration.cfaPattern = PreferenceKeys.getSensorModeCfa(sensorMode);
+        configuration.dcg1610Crop = PreferenceKeys.isSensorModeDcg1610CropOn(sensorMode);
+        return configuration;
+    }
+
+    private SensorModeConfiguration getSensorModeConfiguration(int sensorMode) {
+        if (sensorMode == SENSOR_MODE_1) {
+            return sensorMode1;
+        }
+        if (sensorMode == SENSOR_MODE_2) {
+            return sensorMode2;
+        }
+        return null;
+    }
+
+    private SensorModeConfiguration getActiveSensorModeConfiguration() {
+        return isSensorModeActive() ? getSensorModeConfiguration(sensorModeOn) : null;
+    }
+
+    private void applySensorModeConfiguration() {
+        SensorModeConfiguration configuration = getSensorModeConfiguration(sensorModeOn);
+        if (configuration == null) {
+            sensorModeKey = "";
+            sensorModeValue = -1;
+            cfaPattern = defaultCfaPattern;
+            return;
+        }
+
+        sensorModeKey = configuration.key;
+        sensorModeValue = configuration.value;
+        cfaPattern = configuration.cfaPattern;
+    }
+
+    private static class SensorModeConfiguration {
+        String key = "";
+        int value = -1;
+        int sessionType = 0;
+        int sessionTypeVideo = 0;
+        int dngBlackLevel = -1;
+        int dngWhiteLevel = -1;
+        int cfaPattern = -1;
+        boolean dcg1610Crop = false;
     }
 
     public void saveID() {

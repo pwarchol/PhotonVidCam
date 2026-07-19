@@ -17,6 +17,12 @@
             app:title="@string/general_settings_screen_title"
             app:summary="@string/general_settings_screen_summary"
             android:icon="@drawable/settings_24px" />
+        <Preference
+            android:layout="@layout/preference_with_margin"
+            app:key="sensor_modes_settings_screen"
+            app:title="@string/sensor_modes"
+            app:summary="@string/sensor_modes_summary"
+            android:icon="@drawable/settings_photo_camera_24px" />
     </PreferenceCategory>
 
     <PreferenceCategory

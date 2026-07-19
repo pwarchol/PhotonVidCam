@@ -44,6 +44,7 @@ public class CameraFragmentViewModel extends AndroidViewModel {
     public void onResume() {
         mCustomOrientationEventListener.enable();
         cameraFragmentModel.setSettingsBarVisibility(false);
+        cameraFragmentModel.syncFunctionStates();
     }
 
     public void onPause() {

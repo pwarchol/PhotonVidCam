@@ -2644,8 +2644,9 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
 
             // We set up a CaptureRequest.Builder with the output Surface.
             setCaptureRequestBuilder();
-            if (PhotonCamera.getSettings().sensorModeOn && !validateSensorModeActivation()) {
-                PhotonCamera.getSettings().sensorModeOn = false;
+            if (PhotonCamera.getSettings().sensorModeOn != Settings.SENSOR_MODE_OFF
+                    && !validateSensorModeActivation(PhotonCamera.getSettings().sensorModeOn)) {
+                PhotonCamera.getSettings().setSensorMode(Settings.SENSOR_MODE_OFF);
             }
 
             // Here, we create a CameraCaptureSession for camera preview.
@@ -3391,8 +3392,10 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
             PhotonCamera.isQucommAdrcOff = mIsFunctionOneOn;
             restartCamera();
             return;
-        } else if (PhotonCamera.getSettings().functionOne.equals("Sensor Mode")) {
-            if (!toggleSensorModeFromFunction()) {
+        } else if (getSensorModeForFunction(PhotonCamera.getSettings().functionOne)
+                != Settings.SENSOR_MODE_OFF) {
+            int sensorMode = getSensorModeForFunction(PhotonCamera.getSettings().functionOne);
+            if (!toggleSensorModeFromFunction(sensorMode)) {
                 mIsFunctionOneOn = !mIsFunctionOneOn;
                 PhotonCamera.isFunctionOneOn = mIsFunctionOneOn;
             }
@@ -3525,8 +3528,10 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
             PhotonCamera.isQucommAdrcOff = mIsFunctionTwoOn;
             restartCamera();
             return;
-        } else if (PhotonCamera.getSettings().functionTwo.equals("Sensor Mode")) {
-            if (!toggleSensorModeFromFunction()) {
+        } else if (getSensorModeForFunction(PhotonCamera.getSettings().functionTwo)
+                != Settings.SENSOR_MODE_OFF) {
+            int sensorMode = getSensorModeForFunction(PhotonCamera.getSettings().functionTwo);
+            if (!toggleSensorModeFromFunction(sensorMode)) {
                 mIsFunctionTwoOn = !mIsFunctionTwoOn;
                 PhotonCamera.isFunctionTwoOn = mIsFunctionTwoOn;
             }
@@ -3603,22 +3608,52 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
         }
     }
 
-    private boolean toggleSensorModeFromFunction() {
+    private boolean toggleSensorModeFromFunction(int sensorMode) {
         Settings settings = PhotonCamera.getSettings();
+        int nextSensorMode = settings.sensorModeOn == sensorMode
+                ? Settings.SENSOR_MODE_OFF : sensorMode;
 
         // Turning Sensor Mode off must remain possible even after its configuration changes.
-        if (!settings.sensorModeOn && !validateSensorModeActivation()) {
+        if (nextSensorMode != Settings.SENSOR_MODE_OFF
+                && !validateSensorModeActivation(nextSensorMode)) {
             return false;
         }
 
-        settings.toggleSensorMode();
+        settings.setSensorMode(nextSensorMode);
+        syncSensorModeFunctionStates();
         restartCamera();
         return true;
     }
 
-    private boolean validateSensorModeActivation() {
+    public void syncSensorModeFunctionStates() {
         Settings settings = PhotonCamera.getSettings();
-        if (!settings.hasSensorModeConfiguration()) {
+        int activeSensorMode = settings.isSensorModeActive()
+                ? settings.sensorModeOn : Settings.SENSOR_MODE_OFF;
+        int functionOneSensorMode = getSensorModeForFunction(settings.functionOne);
+        if (functionOneSensorMode != Settings.SENSOR_MODE_OFF) {
+            mIsFunctionOneOn = activeSensorMode == functionOneSensorMode;
+            PhotonCamera.isFunctionOneOn = mIsFunctionOneOn;
+        }
+        int functionTwoSensorMode = getSensorModeForFunction(settings.functionTwo);
+        if (functionTwoSensorMode != Settings.SENSOR_MODE_OFF) {
+            mIsFunctionTwoOn = activeSensorMode == functionTwoSensorMode;
+            PhotonCamera.isFunctionTwoOn = mIsFunctionTwoOn;
+        }
+    }
+
+    private int getSensorModeForFunction(String function) {
+        if ("Sensor Mode 1".equals(function)) {
+            return Settings.SENSOR_MODE_1;
+        }
+        if ("Sensor Mode 2".equals(function)) {
+            return Settings.SENSOR_MODE_2;
+        }
+        return Settings.SENSOR_MODE_OFF;
+    }
+
+    private boolean validateSensorModeActivation(int sensorMode) {
+        Settings settings = PhotonCamera.getSettings();
+        if (!settings.hasSensorModeConfiguration(sensorMode)) {
             showToast(activity.getString(R.string.sensor_mode_configuration_missing));
             return false;
         }
@@ -3629,8 +3664,9 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
         }
 
         try {
+            String key = settings.getSensorModeKey(sensorMode).trim();
             CaptureRequest.Key<Integer> sensorModeKey =
-                    new CaptureRequest.Key<>(settings.sensorModeKey.trim(), Integer.class);
+                    new CaptureRequest.Key<>(key, Integer.class);
             if (!VendorTagUtils.isSupported(mPreviewRequestBuilder, sensorModeKey)) {
                 showToast(activity.getString(R.string.sensor_mode_key_not_supported));
                 return false;

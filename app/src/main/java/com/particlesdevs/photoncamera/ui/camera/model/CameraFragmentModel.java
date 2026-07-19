@@ -55,17 +55,26 @@ public class CameraFragmentModel extends BaseObservable {
     public void onFunctionOneClicked() {
         if (PhotonCamera.getCaptureController() != null) {
             PhotonCamera.getCaptureController().functionOne();
-            functionOneOn = PhotonCamera.getCaptureController().mIsFunctionOneOn;
-            notifyChange();
+            syncFunctionStates();
         }
     }
 
     public void onFunctionTwoClicked() {
         if (PhotonCamera.getCaptureController() != null) {
             PhotonCamera.getCaptureController().functionTwo();
-            functionTwoOn = PhotonCamera.getCaptureController().mIsFunctionTwoOn;
-            notifyChange();
+            syncFunctionStates();
         }
+    }
+
+    public void syncFunctionStates() {
+        CaptureController captureController = PhotonCamera.getCaptureController();
+        if (captureController == null) {
+            return;
+        }
+        captureController.syncSensorModeFunctionStates();
+        functionOneOn = captureController.mIsFunctionOneOn;
+        functionTwoOn = captureController.mIsFunctionTwoOn;
+        notifyChange();
     }
 
     public void onEisToggleLongClicked(View view, Object uiController) {
@@ -620,7 +629,7 @@ public class CameraFragmentModel extends BaseObservable {
                     PreferenceKeys.setFunctionOneValue(selectedValue);
 
                     dialog.dismiss();
-                    notifyChange();
+                    syncFunctionStates();
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
@@ -727,7 +736,7 @@ public class CameraFragmentModel extends BaseObservable {
                     PreferenceKeys.setFunctionTwoValue(selectedValue);
 
                     dialog.dismiss();
-                    notifyChange();
+                    syncFunctionStates();
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();

@@ -181,14 +181,24 @@ public class PreferenceKeys {
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SESSION_TYPE_VIDEO, 0);
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SESSION_TYPE_DNG_BLACK_LEVEL, -1);
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SESSION_TYPE_DNG_WHITE_LEVEL, -1);
-        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DEFAULT_ON, false);
-        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_KEY, "");
-        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_VALUE, -1);
-        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_SESSION_TYPE, 0);
-        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_SESSION_TYPE_VIDEO, 0);
-        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DNG_BLACK_LEVEL, -1);
-        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DNG_WHITE_LEVEL, -1);
-        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_DCG_16_10_CROP, false);
+        settingsManager.setDefaults(Key.KEY_SENSOR_MODE_DEFAULT, -1, new int[]{-1, 1, 2});
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DEFAULT, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_1_KEY, "");
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_1_VALUE, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_1_SESSION_TYPE, 0);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_1_SESSION_TYPE_VIDEO, 0);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_1_DNG_BLACK_LEVEL, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_1_DNG_WHITE_LEVEL, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_1_CFA, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_1_DCG_16_10_CROP, false);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_2_KEY, "");
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_2_VALUE, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_2_SESSION_TYPE, 0);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_2_SESSION_TYPE_VIDEO, 0);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_2_DNG_BLACK_LEVEL, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_2_DNG_WHITE_LEVEL, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_2_CFA, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_2_DCG_16_10_CROP, false);
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_COUNTDOWN_TIMER, 0);
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_BRACKETING_MODE, 0); // Default to disable bracketing
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_PREVIEW_FORMAT, resources.getString(R.string.pref_preview_format_default));
@@ -597,32 +607,44 @@ public class PreferenceKeys {
         return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL, Key.KEY_SESSION_TYPE_DNG_WHITE_LEVEL);
     }
 
-    public static boolean isSensorModeDefaultOn() {
-        return preferenceKeys.settingsManager.getBoolean(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DEFAULT_ON);
+    public static int getSensorModeDefault() {
+        int value = preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DEFAULT);
+        return value == 1 || value == 2 ? value : -1;
     }
 
-    public static String getSensorModeKey() {
-        return preferenceKeys.settingsManager.getString(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_KEY);
+    public static String getSensorModeKey(int sensorMode) {
+        return preferenceKeys.settingsManager.getString(SCOPE_GLOBAL,
+                sensorMode == 2 ? Key.KEY_SENSOR_MODE_2_KEY : Key.KEY_SENSOR_MODE_1_KEY);
     }
 
-    public static int getSensorModeValue() {
-        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_VALUE);
+    public static int getSensorModeValue(int sensorMode) {
+        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL,
+                sensorMode == 2 ? Key.KEY_SENSOR_MODE_2_VALUE : Key.KEY_SENSOR_MODE_1_VALUE);
     }
 
-    public static int getSensorModeSessionType() {
-        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_SESSION_TYPE);
+    public static int getSensorModeSessionType(int sensorMode) {
+        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL,
+                sensorMode == 2 ? Key.KEY_SENSOR_MODE_2_SESSION_TYPE : Key.KEY_SENSOR_MODE_1_SESSION_TYPE);
     }
 
-    public static int getSensorModeSessionTypeVideo() {
-        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_SESSION_TYPE_VIDEO);
+    public static int getSensorModeSessionTypeVideo(int sensorMode) {
+        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL,
+                sensorMode == 2 ? Key.KEY_SENSOR_MODE_2_SESSION_TYPE_VIDEO : Key.KEY_SENSOR_MODE_1_SESSION_TYPE_VIDEO);
     }
 
-    public static int getSensorModeDngBlackLevel() {
-        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DNG_BLACK_LEVEL);
+    public static int getSensorModeDngBlackLevel(int sensorMode) {
+        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL,
+                sensorMode == 2 ? Key.KEY_SENSOR_MODE_2_DNG_BLACK_LEVEL : Key.KEY_SENSOR_MODE_1_DNG_BLACK_LEVEL);
     }
 
-    public static int getSensorModeDngWhiteLevel() {
-        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DNG_WHITE_LEVEL);
+    public static int getSensorModeDngWhiteLevel(int sensorMode) {
+        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL,
+                sensorMode == 2 ? Key.KEY_SENSOR_MODE_2_DNG_WHITE_LEVEL : Key.KEY_SENSOR_MODE_1_DNG_WHITE_LEVEL);
+    }
+
+    public static int getSensorModeCfa(int sensorMode) {
+        return preferenceKeys.settingsManager.getInteger(SCOPE_GLOBAL,
+                sensorMode == 2 ? Key.KEY_SENSOR_MODE_2_CFA : Key.KEY_SENSOR_MODE_1_CFA);
     }
 
     public static float getSharpnessValue() {
@@ -1165,8 +1187,10 @@ public class PreferenceKeys {
         return preferenceKeys.settingsManager.getBoolean(SCOPE_GLOBAL, Key.KEY_RAWVIDEO_CROP_169);
     }
 
-    public static boolean isDcg1610CropOn() {
-        return preferenceKeys.settingsManager.getBoolean(SCOPE_GLOBAL, Key.KEY_DCG_16_10_CROP);
+    public static boolean isSensorModeDcg1610CropOn(int sensorMode) {
+        return preferenceKeys.settingsManager.getBoolean(SCOPE_GLOBAL,
+                sensorMode == 2 ? Key.KEY_SENSOR_MODE_2_DCG_16_10_CROP
+                        : Key.KEY_SENSOR_MODE_1_DCG_16_10_CROP);
     }
 
     public enum Key {
@@ -1205,14 +1229,23 @@ public class PreferenceKeys {
         KEY_SESSION_TYPE_VIDEO(R.string.pref_session_type_video_key),
         KEY_SESSION_TYPE_DNG_BLACK_LEVEL(R.string.pref_dng_black_level_key),
         KEY_SESSION_TYPE_DNG_WHITE_LEVEL(R.string.pref_dng_white_level_key),
-        KEY_SENSOR_MODE_DEFAULT_ON(R.string.pref_sensor_mode_default_on_key),
-        KEY_SENSOR_MODE_KEY(R.string.pref_sensor_mode_vendor_key),
-        KEY_SENSOR_MODE_VALUE(R.string.pref_sensor_mode_value_key),
-        KEY_SENSOR_MODE_SESSION_TYPE(R.string.pref_sensor_mode_session_type_key),
-        KEY_SENSOR_MODE_SESSION_TYPE_VIDEO(R.string.pref_sensor_mode_session_type_video_key),
-        KEY_SENSOR_MODE_DNG_BLACK_LEVEL(R.string.pref_sensor_mode_dng_black_level_key),
-        KEY_SENSOR_MODE_DNG_WHITE_LEVEL(R.string.pref_sensor_mode_dng_white_level_key),
-        KEY_DCG_16_10_CROP(R.string.pref_dcg_16_10_crop_key),
+        KEY_SENSOR_MODE_DEFAULT(R.string.pref_sensor_mode_default_selection_key),
+        KEY_SENSOR_MODE_1_KEY(R.string.pref_sensor_mode_1_vendor_key),
+        KEY_SENSOR_MODE_1_VALUE(R.string.pref_sensor_mode_1_value_key),
+        KEY_SENSOR_MODE_1_SESSION_TYPE(R.string.pref_sensor_mode_1_session_type_key),
+        KEY_SENSOR_MODE_1_SESSION_TYPE_VIDEO(R.string.pref_sensor_mode_1_session_type_video_key),
+        KEY_SENSOR_MODE_1_DNG_BLACK_LEVEL(R.string.pref_sensor_mode_1_dng_black_level_key),
+        KEY_SENSOR_MODE_1_DNG_WHITE_LEVEL(R.string.pref_sensor_mode_1_dng_white_level_key),
+        KEY_SENSOR_MODE_1_CFA(R.string.pref_sensor_mode_1_cfa_key),
+        KEY_SENSOR_MODE_1_DCG_16_10_CROP(R.string.pref_sensor_mode_1_dcg_16_10_crop_key),
+        KEY_SENSOR_MODE_2_KEY(R.string.pref_sensor_mode_2_vendor_key),
+        KEY_SENSOR_MODE_2_VALUE(R.string.pref_sensor_mode_2_value_key),
+        KEY_SENSOR_MODE_2_SESSION_TYPE(R.string.pref_sensor_mode_2_session_type_key),
+        KEY_SENSOR_MODE_2_SESSION_TYPE_VIDEO(R.string.pref_sensor_mode_2_session_type_video_key),
+        KEY_SENSOR_MODE_2_DNG_BLACK_LEVEL(R.string.pref_sensor_mode_2_dng_black_level_key),
+        KEY_SENSOR_MODE_2_DNG_WHITE_LEVEL(R.string.pref_sensor_mode_2_dng_white_level_key),
+        KEY_SENSOR_MODE_2_CFA(R.string.pref_sensor_mode_2_cfa_key),
+        KEY_SENSOR_MODE_2_DCG_16_10_CROP(R.string.pref_sensor_mode_2_dcg_16_10_crop_key),
         KEY_CONTRAST_SEEKBAR(R.string.pref_contrast_seekbar_key),
         KEY_SHARPNESS_SEEKBAR(R.string.pref_sharpness_seekbar_key),
         KEY_EXPOCOMPENSATE_SEEKBAR(R.string.pref_expocompensation_seekbar_key),
