@@ -83,7 +83,6 @@ public class SettingsActivity extends BaseActivity implements
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.general_preferences, rootKey);
-            configureSensorModeKeyPreference();
 
             // RAW format list building
             ListPreference rawPreference = findPreference(getString(R.string.pref_raw_format_key));
@@ -365,39 +364,40 @@ public class SettingsActivity extends BaseActivity implements
             }
         }
 
-        private void configureSensorModeKeyPreference() {
-            EditTextPreference sensorModeKeyPreference =
-                    findPreference(getString(R.string.pref_sensor_mode_vendor_key));
-            if (sensorModeKeyPreference == null) {
+        @Override
+        public void onDisplayPreferenceDialog(@NonNull Preference preference) {
+            if (getString(R.string.pref_sensor_mode_vendor_key).equals(preference.getKey())
+                    && preference instanceof EditTextPreference) {
+                showSensorModeKeyOptions((EditTextPreference) preference);
                 return;
             }
+            super.onDisplayPreferenceDialog(preference);
+        }
 
+        private void showSensorModeKeyOptions(EditTextPreference sensorModeKeyPreference) {
             String[] presets = getResources().getStringArray(R.array.sensor_mode_key_presets);
             CharSequence[] options = new CharSequence[presets.length + 1];
             System.arraycopy(presets, 0, options, 0, presets.length);
             options[presets.length] = getString(R.string.sensor_mode_custom_key);
 
-            sensorModeKeyPreference.setOnPreferenceClickListener(preference -> {
-                new AlertDialog.Builder(requireContext())
-                        .setTitle(sensorModeKeyPreference.getTitle())
-                        .setItems(options, (dialog, which) -> {
-                            if (which < presets.length) {
-                                String value = presets[which];
-                                if (sensorModeKeyPreference.callChangeListener(value)) {
-                                    sensorModeKeyPreference.setText(value);
-                                }
-                                return;
+            new AlertDialog.Builder(requireContext())
+                    .setTitle(sensorModeKeyPreference.getTitle())
+                    .setItems(options, (dialog, which) -> {
+                        if (which < presets.length) {
+                            String value = presets[which];
+                            if (sensorModeKeyPreference.callChangeListener(value)) {
+                                sensorModeKeyPreference.setText(value);
                             }
+                            return;
+                        }
 
-                            EditTextPreferenceDialogFragmentCompat editDialog =
-                                    EditTextPreferenceDialogFragmentCompat.newInstance(
-                                            sensorModeKeyPreference.getKey());
-                            editDialog.setTargetFragment(this, 0);
-                            editDialog.show(getParentFragmentManager(), "SensorModeKeyEditDialog");
-                        })
-                        .show();
-                return true;
-            });
+                        EditTextPreferenceDialogFragmentCompat editDialog =
+                                EditTextPreferenceDialogFragmentCompat.newInstance(
+                                        sensorModeKeyPreference.getKey());
+                        editDialog.setTargetFragment(this, 0);
+                        editDialog.show(getParentFragmentManager(), "SensorModeKeyEditDialog");
+                    })
+                    .show();
         }
     }
 
