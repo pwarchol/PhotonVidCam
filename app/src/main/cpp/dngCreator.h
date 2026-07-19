@@ -39,6 +39,7 @@ struct DngMetadata {
     int cfa = 0;
     unsigned char cfa_pattern[4] = {1, 0, 2, 1}; // Default RGGB
     unsigned short cfa_repeat_pattern_dim[2] = {2, 2};
+    bool quad_bayer = false;
     
     // Flags to track what has been set
     bool has_color_matrix1 = false;
@@ -118,6 +119,9 @@ JNIEXPORT void JNICALL Java_com_particlesdevs_photoncamera_processing_DngCreator
 
 JNIEXPORT void JNICALL Java_com_particlesdevs_photoncamera_processing_DngCreator_setCFAPattern(
     JNIEnv *env, jobject obj, jlong creatorPtr, jint pattern);
+
+JNIEXPORT void JNICALL Java_com_particlesdevs_photoncamera_processing_DngCreator_setQuadBayer(
+    JNIEnv *env, jobject obj, jlong creatorPtr, jboolean quadBayer);
 
 JNIEXPORT void JNICALL Java_com_particlesdevs_photoncamera_processing_DngCreator_setGainMap(JNIEnv *env, jobject obj, jlong creatorPtr, jfloatArray gainMap, jint xmin, jint ymin, jint xmax, jint ymax, jint width, jint height);
 

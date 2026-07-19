@@ -51,6 +51,7 @@ public class DngCreator {
     private native void setIso(long nativePtr, short iso);
     private native void setExposureTime(long nativePtr, double exposureTime);
     private native void setCFAPattern(long nativePtr, int pattern);
+    private native void setQuadBayer(long nativePtr, boolean quadBayer);
     private native void setGainMap(long nativePtr, float[] gainMap, int xmin, int ymin, int xmax, int ymax, int width, int height);
     private native void setAperture(long nativePtr, double aperture);
     private native void setFocalLength(long nativePtr, double focalLength);
@@ -416,6 +417,15 @@ public class DngCreator {
         setCFAPattern(nativePtr, pattern);
     }
 
+    /**
+     * Describe the stored mosaic as an un-remosaiced Quad Bayer CFA. The base
+     * RGGB/GRBG/GBRG/BGGR phase is supplied separately through
+     * {@link #setCFAPattern(int)}.
+     */
+    public void setQuadBayer(boolean quadBayer) {
+        setQuadBayer(nativePtr, quadBayer);
+    }
+
     public void setGainMap(float[] gainMap, int xmin, int ymin, int xmax, int ymax, int width, int height) {
         if (gainMap.length < 4) {
             throw new IllegalArgumentException("Gain map must have 4 elements");
@@ -525,6 +535,7 @@ public class DngCreator {
         setCameraCalibration2(toDouble(parameters.calibrationTransform2));
         setAsShotNeutral(toDouble(parameters.whitePoint));
         setCFAPattern(parameters.cfaPattern);
+        setQuadBayer(PhotonCamera.getSettings().cfaPattern == -2);
         setOrientation(parameters.cameraRotation/90);
         if ((PhotonCamera.getSettings().getSessionType() != 36875) && (PhotonCamera.getSettings().shadingMode != 0)) {
             setGainMap(parameters.gainMap,

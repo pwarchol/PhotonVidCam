@@ -473,6 +473,10 @@ public:
         }
     }
 
+    void setQuadBayer(bool quadBayer) {
+        metadata.quad_bayer = quadBayer;
+    }
+
     void setGainMap(const float* gainMap, int xmin, int ymin, int xmax, int ymax, int width, int height) {
         float* gainMap0 = new float[width * height];
         float* gainMap1 = new float[width * height];
@@ -637,6 +641,37 @@ public:
         return output;
     }
 
+    /**
+     * Quad Bayer 2x2 binning: combine each same-color 2x2 quad into one pixel.
+     * The result is a conventional Bayer mosaic at half width and height.
+     */
+    uint16_t* applyQuadBayerBinning(const void* inputData, int srcWidth, int srcHeight,
+                                    int& outWidth, int& outHeight, bool useAverage) {
+        outWidth = srcWidth / 2;
+        outHeight = srcHeight / 2;
+        uint16_t* output = new uint16_t[static_cast<size_t>(outWidth) * static_cast<size_t>(outHeight)];
+        const uint16_t* input = reinterpret_cast<const uint16_t*>(inputData);
+
+        for (int oy = 0; oy < outHeight; oy++) {
+            const int inRow = oy * 2;
+            for (int ox = 0; ox < outWidth; ox++) {
+                const int inCol = ox * 2;
+                const uint32_t sum =
+                    static_cast<uint32_t>(input[inRow * srcWidth + inCol]) +
+                    static_cast<uint32_t>(input[inRow * srcWidth + inCol + 1]) +
+                    static_cast<uint32_t>(input[(inRow + 1) * srcWidth + inCol]) +
+                    static_cast<uint32_t>(input[(inRow + 1) * srcWidth + inCol + 1]);
+
+                output[oy * outWidth + ox] = useAverage
+                    ? static_cast<uint16_t>(sum >> 2)
+                    : static_cast<uint16_t>(std::min(sum, static_cast<uint32_t>(65535u)));
+            }
+        }
+        LOGD("Quad Bayer binning: %dx%d -> %dx%d (%s)", srcWidth, srcHeight, outWidth, outHeight,
+             useAverage ? "average" : "sum");
+        return output;
+    }
+
     void* createDng(void* imageData, int width, int height, size_t &size) {
         metadata.original_width  = width;
         metadata.original_height = height;
@@ -663,8 +698,11 @@ public:
         if (metadata.binning) {
             bool useAverage = (metadata.white_level >= 65535.0);
             metadata.binning_uses_average = useAverage;
-            binnedData    = applyBayerBinning(dataToProcess, actualWidth, actualHeight,
-                                              actualWidth, actualHeight, useAverage);
+            binnedData = metadata.quad_bayer
+                ? applyQuadBayerBinning(dataToProcess, actualWidth, actualHeight,
+                                        actualWidth, actualHeight, useAverage)
+                : applyBayerBinning(dataToProcess, actualWidth, actualHeight,
+                                    actualWidth, actualHeight, useAverage);
             dataToProcess = binnedData;
             if (!useAverage) {
                 metadata.white_level = std::min(metadata.white_level * 4.0, 65535.0);
@@ -689,12 +727,35 @@ public:
         dng_image0->SetXResolution(72.f);
         dng_image0->SetYResolution(72.f);
 
-        // Set black level repeat dimensions
-        dng_image0->SetBlackLevelRepeatDim(2, 2);
+        // A binned Quad Bayer frame has already been reduced to a conventional
+        // 2x2 Bayer mosaic. An unbinned frame must retain its native 4x4 CFA.
+        const bool writeQuadPattern = metadata.quad_bayer && !metadata.binning;
+        const unsigned int patternDim = writeQuadPattern ? 4u : 2u;
+        const unsigned int patternSize = patternDim * patternDim;
+        unsigned char quadCfaPattern[16] = {0};
+        unsigned short quadBlackLevel[16] = {0};
 
-        // Set CFA pattern
-        dng_image0->SetCFARepeatPatternDim(2, 2);
-        dng_image0->SetCFAPattern(4, metadata.cfa_pattern);
+        if (writeQuadPattern) {
+            for (unsigned int y = 0; y < 4; y++) {
+                for (unsigned int x = 0; x < 4; x++) {
+                    const unsigned int source = (y / 2) * 2 + (x / 2);
+                    const unsigned int target = y * 4 + x;
+                    quadCfaPattern[target] = metadata.cfa_pattern[source];
+                    quadBlackLevel[target] = metadata.black_level[source];
+                }
+            }
+        }
+
+        const unsigned char* cfaPattern = writeQuadPattern
+            ? quadCfaPattern
+            : metadata.cfa_pattern;
+        const unsigned short* blackLevel = writeQuadPattern
+            ? quadBlackLevel
+            : metadata.black_level;
+
+        dng_image0->SetBlackLevelRepeatDim(patternDim, patternDim);
+        dng_image0->SetCFARepeatPatternDim(patternDim, patternDim);
+        dng_image0->SetCFAPattern(patternSize, cfaPattern);
     
         // When input white level is >10-bit and we output 10-bit, use gamma compression + linearization table
         if (metadata.bps == 10 && metadata.white_level > 1023.0) {
@@ -704,13 +765,15 @@ public:
                 const double newLevel = 65535;
                 dng_image0->SetWhiteLevelRational(1, &newLevel);
                 // set Black level too
-                unsigned short compressedBlackLevel[4];
-                for(int i =0; i<4;i++)
-                    compressedBlackLevel[i] = static_cast<unsigned short>((newLevel / metadata.white_level) * metadata.black_level[i]);
-                dng_image0->SetBlackLevel(4, compressedBlackLevel);
+                unsigned short compressedBlackLevel[16] = {0};
+                for (unsigned int i = 0; i < patternSize; i++) {
+                    compressedBlackLevel[i] = static_cast<unsigned short>(
+                        (newLevel / metadata.white_level) * blackLevel[i]);
+                }
+                dng_image0->SetBlackLevel(patternSize, compressedBlackLevel);
             }
         } else {
-            dng_image0->SetBlackLevel(4, metadata.black_level);
+            dng_image0->SetBlackLevel(patternSize, blackLevel);
             dng_image0->SetWhiteLevelRational(1, &metadata.white_level);
         }
 
@@ -1175,6 +1238,13 @@ public:
         }
     }
 
+    JNIEXPORT void JNICALL Java_com_particlesdevs_photoncamera_processing_DngCreator_setQuadBayer(JNIEnv *env, jobject obj, jlong creatorPtr, jboolean quadBayer) {
+        DngCreator* creator = reinterpret_cast<DngCreator*>(creatorPtr);
+        if (creator) {
+            creator->setQuadBayer(quadBayer);
+        }
+    }
+
     JNIEXPORT void JNICALL Java_com_particlesdevs_photoncamera_processing_DngCreator_setGainMap(JNIEnv *env, jobject obj, jlong creatorPtr, jfloatArray gainMap, jint xmin, jint ymin, jint xmax, jint ymax, jint width, jint height) {
         DngCreator* creator = reinterpret_cast<DngCreator*>(creatorPtr);
         if (creator && gainMap) {
@@ -1237,7 +1307,14 @@ public:
 
             if (creator->metadata.binning && creator->metadata.original_width > 0) {
                 int binnedW, binnedH;
-                binnedInput = creator->applyBayerBinning(
+                binnedInput = creator->metadata.quad_bayer
+                    ? creator->applyQuadBayerBinning(
+                        input,
+                        creator->metadata.original_width,
+                        creator->metadata.original_height,
+                        binnedW, binnedH,
+                        creator->metadata.binning_uses_average)
+                    : creator->applyBayerBinning(
                         input,
                         creator->metadata.original_width,
                         creator->metadata.original_height,
