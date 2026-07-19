@@ -8,6 +8,7 @@ import com.particlesdevs.photoncamera.app.PhotonCamera;
 import com.particlesdevs.photoncamera.util.Log;
 
 import com.particlesdevs.photoncamera.processing.render.Parameters;
+import com.particlesdevs.photoncamera.settings.PreferenceKeys;
 
 import org.chickenhook.restrictionbypass.BuildConfig;
 
@@ -62,6 +63,7 @@ public class DngCreator {
     private native void setCompression(long nativePtr, boolean useCompression);
     private native void setBitsPerSample(long nativePtr, int bps);
     private native void setBinning(long nativePtr, boolean binning);
+    private native void setDcg1610Crop(long nativePtr, boolean crop);
     private native void setGpsLatitude(long nativePtr, double degree, double minute, double second, char ref);
     private native void setGpsLongitude(long nativePtr, double degree, double minute, double second, char ref);
     private native void setGpsAltitude(long nativePtr, double altitude, char ref);
@@ -538,6 +540,9 @@ public class DngCreator {
         if (PhotonCamera.getSettings().selectedMode.equals(CameraMode.RAWVIDEO)) {
             setFrameRate((double)PhotonCamera.getSettings().videoFramrate);
         }
+
+        boolean isRawVideo = PhotonCamera.getSettings().selectedMode.equals(CameraMode.RAWVIDEO);
+        setDcg1610Crop(nativePtr, !isRawVideo && PreferenceKeys.isDcg1610CropOn());
 
         /*if (PhotonCamera.getSettings().gpsLocation && PhotonCamera.gpsLocation != null) {
             double lat = PhotonCamera.gpsLocation.getLatitude();

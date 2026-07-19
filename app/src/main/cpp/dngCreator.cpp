@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <vector>
 #include <cstdint>
+#include <cstring>
 #include <ctime>
 #include <cstdio>
 #include <dlfcn.h>
@@ -548,6 +549,51 @@ public:
         metadata.binning = binning;
     }
 
+    void setDcg1610Crop(bool crop) {
+        metadata.dcg_16_10_crop = crop;
+    }
+
+    /**
+     * Calculates a top-left 16:10 crop while keeping both dimensions even so the
+     * Bayer phase is preserved. Only one dimension is shortened.
+     */
+    bool calculate1610Crop(int srcWidth, int srcHeight, int& cropWidth, int& cropHeight) {
+        if (srcWidth <= 0 || srcHeight <= 0) return false;
+
+        cropWidth = srcWidth;
+        cropHeight = srcHeight;
+        if (srcWidth >= srcHeight) {
+            if (static_cast<int64_t>(srcWidth) * 10 > static_cast<int64_t>(srcHeight) * 16) {
+                cropWidth = static_cast<int>(static_cast<int64_t>(srcHeight) * 16 / 10);
+            } else if (static_cast<int64_t>(srcWidth) * 10 < static_cast<int64_t>(srcHeight) * 16) {
+                cropHeight = static_cast<int>(static_cast<int64_t>(srcWidth) * 10 / 16);
+            }
+        } else {
+            if (static_cast<int64_t>(srcHeight) * 10 > static_cast<int64_t>(srcWidth) * 16) {
+                cropHeight = static_cast<int>(static_cast<int64_t>(srcWidth) * 16 / 10);
+            } else if (static_cast<int64_t>(srcHeight) * 10 < static_cast<int64_t>(srcWidth) * 16) {
+                cropWidth = static_cast<int>(static_cast<int64_t>(srcHeight) * 10 / 16);
+            }
+        }
+
+        cropWidth &= ~1;
+        cropHeight &= ~1;
+        return cropWidth > 0 && cropHeight > 0 &&
+               (cropWidth < srcWidth || cropHeight < srcHeight);
+    }
+
+    uint16_t* cropTopLeft(const void* inputData, int srcWidth,
+                          int cropWidth, int cropHeight) {
+        uint16_t* output = new uint16_t[static_cast<size_t>(cropWidth) * cropHeight];
+        const uint16_t* input = reinterpret_cast<const uint16_t*>(inputData);
+        for (int y = 0; y < cropHeight; y++) {
+            memcpy(output + static_cast<size_t>(y) * cropWidth,
+                   input + static_cast<size_t>(y) * srcWidth,
+                   static_cast<size_t>(cropWidth) * sizeof(uint16_t));
+        }
+        return output;
+    }
+
     /**
      * Bayer 2x2 binning: each output pixel combines 4 same-color input pixels
      * (from a 4x4 input block → 2x2 output Bayer cell), preserving the CFA pattern.
@@ -598,12 +644,26 @@ public:
         void*     dataToProcess = imageData;
         int       actualWidth   = width;
         int       actualHeight  = height;
+        uint16_t* croppedData   = nullptr;
         uint16_t* binnedData    = nullptr;
+
+        if (metadata.dcg_16_10_crop) {
+            int cropWidth;
+            int cropHeight;
+            if (calculate1610Crop(width, height, cropWidth, cropHeight)) {
+                croppedData = cropTopLeft(imageData, width, cropWidth, cropHeight);
+                dataToProcess = croppedData;
+                actualWidth = cropWidth;
+                actualHeight = cropHeight;
+                LOGD("DNG 16:10 crop applied: %dx%d -> %dx%d",
+                     width, height, cropWidth, cropHeight);
+            }
+        }
 
         if (metadata.binning) {
             bool useAverage = (metadata.white_level >= 65535.0);
             metadata.binning_uses_average = useAverage;
-            binnedData    = applyBayerBinning(imageData, width, height,
+            binnedData    = applyBayerBinning(dataToProcess, actualWidth, actualHeight,
                                               actualWidth, actualHeight, useAverage);
             dataToProcess = binnedData;
             if (!useAverage) {
@@ -728,6 +788,9 @@ public:
         }
         if (binnedData) {
             delete[] binnedData;
+        }
+        if (croppedData) {
+            delete[] croppedData;
         }
         size = writeSize;
         return res;
@@ -1134,6 +1197,13 @@ public:
         DngCreator* creator = reinterpret_cast<DngCreator*>(creatorPtr);
         if (creator) {
             creator->setBinning(binning);
+        }
+    }
+
+    JNIEXPORT void JNICALL Java_com_particlesdevs_photoncamera_processing_DngCreator_setDcg1610Crop(JNIEnv *env, jobject obj, jlong creatorPtr, jboolean crop) {
+        DngCreator* creator = reinterpret_cast<DngCreator*>(creatorPtr);
+        if (creator) {
+            creator->setDcg1610Crop(crop);
         }
     }
 

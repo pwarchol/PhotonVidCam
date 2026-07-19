@@ -188,6 +188,7 @@ public class PreferenceKeys {
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_SESSION_TYPE_VIDEO, 0);
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DNG_BLACK_LEVEL, -1);
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_SENSOR_MODE_DNG_WHITE_LEVEL, -1);
+        settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_DCG_16_10_CROP, false);
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_COUNTDOWN_TIMER, 0);
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_BRACKETING_MODE, 0); // Default to disable bracketing
         settingsManager.setInitial(SCOPE_GLOBAL, Key.KEY_PREVIEW_FORMAT, resources.getString(R.string.pref_preview_format_default));
@@ -1164,6 +1165,10 @@ public class PreferenceKeys {
         return preferenceKeys.settingsManager.getBoolean(SCOPE_GLOBAL, Key.KEY_RAWVIDEO_CROP_169);
     }
 
+    public static boolean isDcg1610CropOn() {
+        return preferenceKeys.settingsManager.getBoolean(SCOPE_GLOBAL, Key.KEY_DCG_16_10_CROP);
+    }
+
     public enum Key {
         KEY_PREF_VERSION(R.string._pref_version),
         KEY_ENABLE_SYSTEM_NR(R.string.pref_enable_system_nr_key),
@@ -1207,6 +1212,7 @@ public class PreferenceKeys {
         KEY_SENSOR_MODE_SESSION_TYPE_VIDEO(R.string.pref_sensor_mode_session_type_video_key),
         KEY_SENSOR_MODE_DNG_BLACK_LEVEL(R.string.pref_sensor_mode_dng_black_level_key),
         KEY_SENSOR_MODE_DNG_WHITE_LEVEL(R.string.pref_sensor_mode_dng_white_level_key),
+        KEY_DCG_16_10_CROP(R.string.pref_dcg_16_10_crop_key),
         KEY_CONTRAST_SEEKBAR(R.string.pref_contrast_seekbar_key),
         KEY_SHARPNESS_SEEKBAR(R.string.pref_sharpness_seekbar_key),
         KEY_EXPOCOMPENSATE_SEEKBAR(R.string.pref_expocompensation_seekbar_key),
