@@ -3,6 +3,7 @@
     <string-array name="sensor_mode_key_presets">
         <item>vivo.control.forceSensorMode</item>
         <item>com.oplus.engineercamera.agingtest.mode.select</item>
+        <item>org.codeaurora.qcamera3.sensor_meta_data.current_mode</item>
     </string-array>
 
     <string-array name="sensor_mode_default_entries">
