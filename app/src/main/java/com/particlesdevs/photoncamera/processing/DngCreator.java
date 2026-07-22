@@ -475,12 +475,11 @@ public class DngCreator {
     }
 
     public void setParameters(Parameters parameters) {
+        // Parameters describe the actual buffer being written. In particular, stacked RAW
+        // levels have already been rescaled by ProcessorBase.IncreaseWLBL().
         short[] blackLevel = new short[4];
         for (int i = 0; i < 4; i++) {
-            //if ((PhotonCamera.getSettings().dngBlackLevel >= 0) && (PhotonCamera.getSettings().frameCount == 1)) {
-            if (PhotonCamera.getSettings().getDngBlackLevel() >= 0) {
-                blackLevel[i] = (short) PhotonCamera.getSettings().getDngBlackLevel();
-            } else if (parameters.whiteLevel <= parameters.blackLevel[i]) {
+            if (parameters.whiteLevel <= parameters.blackLevel[i]) {
                 blackLevel[i] = 64;
             } else {
                 blackLevel[i] = (short) parameters.blackLevel[i];
@@ -520,11 +519,7 @@ public class DngCreator {
         setFocalLength(parameters.focalLength);
         setAperture(parameters.aperture);
         setBlackLevel(blackLevel);
-        if (PhotonCamera.getSettings().getDngWhiteLevel() == -1) {
-            setWhiteLevel(parameters.whiteLevel);
-        } else {
-            setWhiteLevel(PhotonCamera.getSettings().getDngWhiteLevel());
-        }
+        setWhiteLevel(parameters.whiteLevel);
         setCalibrationIlluminant1((short) parameters.calibrationIlluminant1);
         setCalibrationIlluminant2((short) parameters.calibrationIlluminant2);
         setColorMatrix1(toDouble(parameters.ColorMatrix1));

@@ -261,6 +261,17 @@ public class Parameters {
             if (white != null) {
                 whiteLevel = (int) white;
             }
+            int configuredWhiteLevel = PhotonCamera.getSettings().getDngWhiteLevel();
+            float maxBlackLevel = Math.max(Math.max(blackLevel[0], blackLevel[1]),
+                    Math.max(blackLevel[2], blackLevel[3]));
+            // Apply an explicit sensor-scale override before processing. Stacked output
+            // scales this value together with blackLevel in ProcessorBase.IncreaseWLBL().
+            if (configuredWhiteLevel > maxBlackLevel && configuredWhiteLevel <= 0xffff) {
+                whiteLevel = configuredWhiteLevel;
+            } else if (configuredWhiteLevel >= 0) {
+                Log.w(TAG, "Ignoring invalid DNG white level override: " + configuredWhiteLevel
+                        + " (black level: " + maxBlackLevel + ")");
+            }
 
             LensShadingMap lensMap = result.get(CaptureResult.STATISTICS_LENS_SHADING_CORRECTION_MAP);
             if (lensMap != null) {
