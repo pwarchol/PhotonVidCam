@@ -89,7 +89,7 @@
     <string name="dng_black_level">DNG Black Level</string>
     <string name="dng_white_level">DNG White Level</string>
     <string name="sensor_modes">Sensor modes</string>
-    <string name="sensor_modes_summary">Configure and select sensor mode profiles</string>
+    <string name="sensor_modes_summary">Configure and select sensor mode</string>
     <string name="sensor_mode_default">Default sensor mode</string>
     <string name="sensor_mode_1">Sensor mode 1</string>
     <string name="sensor_mode_2">Sensor mode 2</string>
