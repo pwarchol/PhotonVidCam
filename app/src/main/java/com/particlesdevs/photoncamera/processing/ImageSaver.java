@@ -280,8 +280,8 @@ public class ImageSaver {
         specificsBuilder.append("\n   qtiDCGMode: ").append(sp.qtiDCGMode);
         specificsBuilder.append("\n   qtiImageStabilizationMode: ").append(sp.qtiImageStabilizationMode);
         specificsBuilder.append("\n   xiaomiHdrMode: ").append(sp.xiaomiHdrMode);
-        specificsBuilder.append("\n   sensorModes: ").append(Arrays.toString(sp.sensorModes));
-        specificsBuilder.append("\n   sensorModeKey: ").append(sp.sensorModeKey);
+        specificsBuilder.append("\n   sensorModeKey: ").append(PhotonCamera.getSettings().sensorModeKey);
+        specificsBuilder.append("\n   sensorModeValue: ").append(PhotonCamera.getSettings().sensorModeValue);
         specificsBuilder.append("\n   vivoVideoMode: ").append(sp.vivoVideoMode);
         specificsBuilder.append("\n   vivoEisConfig: ").append(sp.vivoEisConfig);
         specificsBuilder.append("\n   vivoEisEnhance: ").append(sp.vivoEisEnhance);
