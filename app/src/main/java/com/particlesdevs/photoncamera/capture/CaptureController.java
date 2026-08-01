@@ -2689,6 +2689,10 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
 
             // We set up a CaptureRequest.Builder with the output Surface.
             setCaptureRequestBuilder();
+            if (PhotonCamera.getSettings().sensorModeOn != Settings.SENSOR_MODE_OFF
+                    && !validateSensorModeActivation(PhotonCamera.getSettings().sensorModeOn)) {
+                PhotonCamera.getSettings().setSensorMode(Settings.SENSOR_MODE_OFF);
+            }
 
             // Here, we create a CameraCaptureSession for camera preview.
             List<Surface> surfaces = configureSurfaces(isBurstSession);
@@ -2697,18 +2701,18 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
             int SessionTypeVideo = 0;
             if (PhotonCamera.getSettings().selectedMode.equals(CameraMode.VIDEO)) {
                 if (PhotonCamera.isEisLookAheadOn && (physicalID == logicalID)) {
-                    SessionTypeVideo = PhotonCamera.getSettings().sessionTypeVideo | 0xF008;
+                    SessionTypeVideo = PhotonCamera.getSettings().getSessionTypeVideo() | 0xF008;
                 } else if (PhotonCamera.isEisRealtimeOn && (physicalID == logicalID)) {
-                    SessionTypeVideo = PhotonCamera.getSettings().sessionTypeVideo | 0xF004;
+                    SessionTypeVideo = PhotonCamera.getSettings().getSessionTypeVideo() | 0xF004;
                 } else {
-                    SessionTypeVideo = PhotonCamera.getSettings().sessionTypeVideo;
+                    SessionTypeVideo = PhotonCamera.getSettings().getSessionTypeVideo();
                 }
                 if (!PhotonCamera.isSessionTypeOn) {
                     SessionTypeVideo = 0;
                 }
             }
             else {
-                SessionType = PhotonCamera.getSettings().sessionType;
+                SessionType = PhotonCamera.getSettings().getSessionType();
                 if ((mTargetFormat == ImageFormat.HEIC) || !PhotonCamera.isSessionTypeOn) {
                     SessionType = 0;
                 }
@@ -3436,9 +3440,13 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
             PhotonCamera.isQucommAdrcOff = mIsFunctionOneOn;
             restartCamera();
             return;
-        } else if (PhotonCamera.getSettings().functionOne.equals("Qualcomm Sensor Mode")) {
-            PhotonCamera.isQucommSensorModeOn = mIsFunctionOneOn;
-            restartCamera();
+        } else if (getSensorModeForFunction(PhotonCamera.getSettings().functionOne)
+                != Settings.SENSOR_MODE_OFF) {
+            int sensorMode = getSensorModeForFunction(PhotonCamera.getSettings().functionOne);
+            if (!toggleSensorModeFromFunction(sensorMode)) {
+                mIsFunctionOneOn = !mIsFunctionOneOn;
+                PhotonCamera.isFunctionOneOn = mIsFunctionOneOn;
+            }
             return;
         } else if (PhotonCamera.getSettings().functionOne.equals("EIS Look Ahead")) {
             PhotonCamera.isEisLookAheadOn = mIsFunctionOneOn;
@@ -3458,10 +3466,6 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
             return;
         } else if (PhotonCamera.getSettings().functionOne.equals("Vivo Pro Mode")) {
             PhotonCamera.isVivoProModeOn = mIsFunctionOneOn;
-            restartCamera();
-            return;
-        } else if (PhotonCamera.getSettings().functionOne.equals("Vivo Sensor Mode")) {
-            PhotonCamera.isVivoSensorModeOn = mIsFunctionOneOn;
             restartCamera();
             return;
         } else if (PhotonCamera.getSettings().functionOne.equals("Vivo Distortion Correction")) {
@@ -3576,9 +3580,13 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
             PhotonCamera.isQucommAdrcOff = mIsFunctionTwoOn;
             restartCamera();
             return;
-        } else if (PhotonCamera.getSettings().functionTwo.equals("Qualcomm Sensor Mode")) {
-            PhotonCamera.isQucommSensorModeOn = mIsFunctionTwoOn;
-            restartCamera();
+        } else if (getSensorModeForFunction(PhotonCamera.getSettings().functionTwo)
+                != Settings.SENSOR_MODE_OFF) {
+            int sensorMode = getSensorModeForFunction(PhotonCamera.getSettings().functionTwo);
+            if (!toggleSensorModeFromFunction(sensorMode)) {
+                mIsFunctionTwoOn = !mIsFunctionTwoOn;
+                PhotonCamera.isFunctionTwoOn = mIsFunctionTwoOn;
+            }
             return;
         } else if (PhotonCamera.getSettings().functionTwo.equals("EIS Look Ahead")) {
             PhotonCamera.isEisLookAheadOn = mIsFunctionTwoOn;
@@ -3598,10 +3606,6 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
             return;
         } else if (PhotonCamera.getSettings().functionTwo.equals("Vivo Pro Mode")) {
             PhotonCamera.isVivoProModeOn = mIsFunctionTwoOn;
-            restartCamera();
-            return;
-        } else if (PhotonCamera.getSettings().functionTwo.equals("Vivo Sensor Mode")) {
-            PhotonCamera.isVivoSensorModeOn = mIsFunctionTwoOn;
             restartCamera();
             return;
         } else if (PhotonCamera.getSettings().functionTwo.equals("Vivo Distortion Correction")) {
@@ -3654,6 +3658,99 @@ public class CaptureController implements MediaRecorder.OnInfoListener {
         if (PhotonCamera.getSettings().functionTwo.contains("Priority")) {
             restartCamera();
         }
+    }
+
+    private boolean toggleSensorModeFromFunction(int sensorMode) {
+        Settings settings = PhotonCamera.getSettings();
+        int nextSensorMode = settings.sensorModeOn == sensorMode
+                ? Settings.SENSOR_MODE_OFF : sensorMode;
+
+        // Turning Sensor Mode off must remain possible even after its configuration changes.
+        if (nextSensorMode != Settings.SENSOR_MODE_OFF
+                && !validateSensorModeActivation(nextSensorMode)) {
+            return false;
+        }
+
+        settings.setSensorMode(nextSensorMode);
+        syncSensorModeFunctionStates();
+        restartCamera();
+        return true;
+    }
+
+    public void restoreSensorModeFromFunctionStates() {
+        Settings settings = PhotonCamera.getSettings();
+        int functionOneSensorMode = getSensorModeForFunction(settings.functionOne);
+        int functionTwoSensorMode = getSensorModeForFunction(settings.functionTwo);
+
+        if (functionOneSensorMode == Settings.SENSOR_MODE_OFF
+                && functionTwoSensorMode == Settings.SENSOR_MODE_OFF) {
+            return;
+        }
+
+        int sensorMode = Settings.SENSOR_MODE_OFF;
+        if (functionOneSensorMode != Settings.SENSOR_MODE_OFF && mIsFunctionOneOn) {
+            sensorMode = functionOneSensorMode;
+        } else if (functionTwoSensorMode != Settings.SENSOR_MODE_OFF && mIsFunctionTwoOn) {
+            sensorMode = functionTwoSensorMode;
+        }
+
+        // Keep the FN button states unchanged while applying them to the newly selected lens.
+        settings.setSensorMode(sensorMode);
+    }
+
+    public void syncSensorModeFunctionStates() {
+        Settings settings = PhotonCamera.getSettings();
+        int activeSensorMode = settings.isSensorModeActive()
+                ? settings.sensorModeOn : Settings.SENSOR_MODE_OFF;
+        int functionOneSensorMode = getSensorModeForFunction(settings.functionOne);
+        if (functionOneSensorMode != Settings.SENSOR_MODE_OFF) {
+            mIsFunctionOneOn = activeSensorMode == functionOneSensorMode;
+            PhotonCamera.isFunctionOneOn = mIsFunctionOneOn;
+        }
+        int functionTwoSensorMode = getSensorModeForFunction(settings.functionTwo);
+        if (functionTwoSensorMode != Settings.SENSOR_MODE_OFF) {
+            mIsFunctionTwoOn = activeSensorMode == functionTwoSensorMode;
+            PhotonCamera.isFunctionTwoOn = mIsFunctionTwoOn;
+        }
+    }
+
+    private int getSensorModeForFunction(String function) {
+        if ("Sensor Mode 1".equals(function)) {
+            return Settings.SENSOR_MODE_1;
+        }
+        if ("Sensor Mode 2".equals(function)) {
+            return Settings.SENSOR_MODE_2;
+        }
+        return Settings.SENSOR_MODE_OFF;
+    }
+
+    private boolean validateSensorModeActivation(int sensorMode) {
+        Settings settings = PhotonCamera.getSettings();
+        if (!settings.hasSensorModeConfiguration(sensorMode)) {
+            showToast(activity.getString(R.string.sensor_mode_configuration_missing));
+            return false;
+        }
+
+        if (mPreviewRequestBuilder == null) {
+            showToast(activity.getString(R.string.sensor_mode_key_not_supported));
+            return false;
+        }
+
+        try {
+            String key = settings.getSensorModeKey(sensorMode).trim();
+            CaptureRequest.Key<Integer> sensorModeKey =
+                    new CaptureRequest.Key<>(key, Integer.class);
+            if (!VendorTagUtils.isSupported(mPreviewRequestBuilder, sensorModeKey)) {
+                showToast(activity.getString(R.string.sensor_mode_key_not_supported));
+                return false;
+            }
+        } catch (RuntimeException exception) {
+            Log.w(TAG, "Invalid Sensor Mode KEY", exception);
+            showToast(activity.getString(R.string.sensor_mode_key_not_supported));
+            return false;
+        }
+
+        return true;
     }
 
     public void setAutoExposureCenter() {

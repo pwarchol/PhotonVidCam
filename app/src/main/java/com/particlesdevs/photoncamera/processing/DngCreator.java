@@ -8,6 +8,7 @@ import com.particlesdevs.photoncamera.app.PhotonCamera;
 import com.particlesdevs.photoncamera.util.Log;
 
 import com.particlesdevs.photoncamera.processing.render.Parameters;
+import com.particlesdevs.photoncamera.settings.PreferenceKeys;
 
 import org.chickenhook.restrictionbypass.BuildConfig;
 
@@ -50,6 +51,7 @@ public class DngCreator {
     private native void setIso(long nativePtr, short iso);
     private native void setExposureTime(long nativePtr, double exposureTime);
     private native void setCFAPattern(long nativePtr, int pattern);
+    private native void setQuadBayer(long nativePtr, boolean quadBayer);
     private native void setGainMap(long nativePtr, float[] gainMap, int xmin, int ymin, int xmax, int ymax, int width, int height);
     private native void setAperture(long nativePtr, double aperture);
     private native void setFocalLength(long nativePtr, double focalLength);
@@ -62,6 +64,7 @@ public class DngCreator {
     private native void setCompression(long nativePtr, boolean useCompression);
     private native void setBitsPerSample(long nativePtr, int bps);
     private native void setBinning(long nativePtr, boolean binning);
+    private native void setDcg1610Crop(long nativePtr, boolean crop);
     private native void setGpsLatitude(long nativePtr, double degree, double minute, double second, char ref);
     private native void setGpsLongitude(long nativePtr, double degree, double minute, double second, char ref);
     private native void setGpsAltitude(long nativePtr, double altitude, char ref);
@@ -414,6 +417,15 @@ public class DngCreator {
         setCFAPattern(nativePtr, pattern);
     }
 
+    /**
+     * Describe the stored mosaic as an un-remosaiced Quad Bayer CFA. The base
+     * RGGB/GRBG/GBRG/BGGR phase is supplied separately through
+     * {@link #setCFAPattern(int)}.
+     */
+    public void setQuadBayer(boolean quadBayer) {
+        setQuadBayer(nativePtr, quadBayer);
+    }
+
     public void setGainMap(float[] gainMap, int xmin, int ymin, int xmax, int ymax, int width, int height) {
         if (gainMap.length < 4) {
             throw new IllegalArgumentException("Gain map must have 4 elements");
@@ -463,12 +475,11 @@ public class DngCreator {
     }
 
     public void setParameters(Parameters parameters) {
+        // Parameters describe the actual buffer being written. In particular, stacked RAW
+        // levels have already been rescaled by ProcessorBase.IncreaseWLBL().
         short[] blackLevel = new short[4];
         for (int i = 0; i < 4; i++) {
-            //if ((PhotonCamera.getSettings().dngBlackLevel >= 0) && (PhotonCamera.getSettings().frameCount == 1)) {
-            if (PhotonCamera.getSettings().dngBlackLevel >= 0) {
-                blackLevel[i] = (short) PhotonCamera.getSettings().dngBlackLevel;
-            } else if (parameters.whiteLevel <= parameters.blackLevel[i]) {
+            if (parameters.whiteLevel <= parameters.blackLevel[i]) {
                 blackLevel[i] = 64;
             } else {
                 blackLevel[i] = (short) parameters.blackLevel[i];
@@ -508,11 +519,7 @@ public class DngCreator {
         setFocalLength(parameters.focalLength);
         setAperture(parameters.aperture);
         setBlackLevel(blackLevel);
-        if (PhotonCamera.getSettings().dngWhiteLevel == -1) {
-            setWhiteLevel(parameters.whiteLevel);
-        } else {
-            setWhiteLevel(PhotonCamera.getSettings().dngWhiteLevel);
-        }
+        setWhiteLevel(parameters.whiteLevel);
         setCalibrationIlluminant1((short) parameters.calibrationIlluminant1);
         setCalibrationIlluminant2((short) parameters.calibrationIlluminant2);
         setColorMatrix1(toDouble(parameters.ColorMatrix1));
@@ -523,8 +530,9 @@ public class DngCreator {
         setCameraCalibration2(toDouble(parameters.calibrationTransform2));
         setAsShotNeutral(toDouble(parameters.whitePoint));
         setCFAPattern(parameters.cfaPattern);
+        setQuadBayer(PhotonCamera.getSettings().cfaPattern == -2);
         setOrientation(parameters.cameraRotation/90);
-        if ((PhotonCamera.getSettings().sessionType != 36875) && (PhotonCamera.getSettings().shadingMode != 0)) {
+        if ((PhotonCamera.getSettings().getSessionType() != 36875) && (PhotonCamera.getSettings().shadingMode != 0)) {
             setGainMap(parameters.gainMap,
                     parameters.sensorPix.top,
                     parameters.sensorPix.left,
@@ -538,6 +546,9 @@ public class DngCreator {
         if (PhotonCamera.getSettings().selectedMode.equals(CameraMode.RAWVIDEO)) {
             setFrameRate((double)PhotonCamera.getSettings().videoFramrate);
         }
+
+        boolean isRawVideo = PhotonCamera.getSettings().selectedMode.equals(CameraMode.RAWVIDEO);
+        setDcg1610Crop(nativePtr, !isRawVideo && PhotonCamera.getSettings().isDcg1610CropOn());
 
         /*if (PhotonCamera.getSettings().gpsLocation && PhotonCamera.gpsLocation != null) {
             double lat = PhotonCamera.gpsLocation.getLatitude();

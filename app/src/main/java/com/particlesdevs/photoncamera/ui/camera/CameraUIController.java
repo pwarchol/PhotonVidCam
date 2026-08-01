@@ -320,6 +320,7 @@ final public class CameraUIController implements CameraUIEventsListener,
 
     private void setID(String input) {
         PreferenceKeys.setCameraID(String.valueOf(input));
+        cameraFragment.captureController.restoreSensorModeFromFunctionStates();
     }
 
     @Override

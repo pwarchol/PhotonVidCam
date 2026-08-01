@@ -33,6 +33,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.EditTextPreference;
+import androidx.preference.EditTextPreferenceDialogFragmentCompat;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragmentCompat;
@@ -328,12 +329,6 @@ public class SettingsActivity extends BaseActivity implements
                 entriesFunctionTwo.add("Qualcomm ADRC Off");
                 entryValuesFunctionTwo.add("Qualcomm ADRC Off");
             }
-            if (PhotonCamera.hasQucommSensorMode) {
-                entriesFunctionOne.add("Qualcomm Sensor Mode");
-                entryValuesFunctionOne.add("Qualcomm Sensor Mode");
-                entriesFunctionTwo.add("Qualcomm Sensor Mode");
-                entryValuesFunctionTwo.add("Qualcomm Sensor Mode");
-            }
             if (PhotonCamera.hasVivoZeissColor) {
                 entriesFunctionOne.add("Vivo Zeiss Color");
                 entryValuesFunctionOne.add("Vivo Zeiss Color");
@@ -345,12 +340,6 @@ public class SettingsActivity extends BaseActivity implements
                 entryValuesFunctionOne.add("Vivo Pro Mode");
                 entriesFunctionTwo.add("Vivo Pro Mode");
                 entryValuesFunctionTwo.add("Vivo Pro Mode");
-            }
-            if (PhotonCamera.hasVivoSensorMode) {
-                entriesFunctionOne.add("Vivo Sensor Mode");
-                entryValuesFunctionOne.add("Vivo Sensor Mode");
-                entriesFunctionTwo.add("Vivo Sensor Mode");
-                entryValuesFunctionTwo.add("Vivo Sensor Mode");
             }
             if (PhotonCamera.hasVivoDistortionCorrection) {
                 entriesFunctionOne.add("Vivo Distortion Correction");
@@ -379,6 +368,52 @@ public class SettingsActivity extends BaseActivity implements
                     functionTwoPreference.setValue(entryPrevValues.get(0).toString());
                 }
             }
+        }
+
+    }
+
+    public static class SensorModesSettingsFragment extends PreferenceFragmentCompat {
+        @Override
+        public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+            setPreferencesFromResource(R.xml.sensor_modes_preferences, rootKey);
+        }
+
+        @Override
+        public void onDisplayPreferenceDialog(@NonNull Preference preference) {
+            String key = preference.getKey();
+            if ((getString(R.string.pref_sensor_mode_1_vendor_key).equals(key)
+                    || getString(R.string.pref_sensor_mode_2_vendor_key).equals(key))
+                    && preference instanceof EditTextPreference) {
+                showSensorModeKeyOptions((EditTextPreference) preference);
+                return;
+            }
+            super.onDisplayPreferenceDialog(preference);
+        }
+
+        private void showSensorModeKeyOptions(EditTextPreference sensorModeKeyPreference) {
+            String[] presets = getResources().getStringArray(R.array.sensor_mode_key_presets);
+            CharSequence[] options = new CharSequence[presets.length + 1];
+            System.arraycopy(presets, 0, options, 0, presets.length);
+            options[presets.length] = getString(R.string.sensor_mode_custom_key);
+
+            new AlertDialog.Builder(requireContext())
+                    .setTitle(sensorModeKeyPreference.getTitle())
+                    .setItems(options, (dialog, which) -> {
+                        if (which < presets.length) {
+                            String value = presets[which];
+                            if (sensorModeKeyPreference.callChangeListener(value)) {
+                                sensorModeKeyPreference.setText(value);
+                            }
+                            return;
+                        }
+
+                        EditTextPreferenceDialogFragmentCompat editDialog =
+                                EditTextPreferenceDialogFragmentCompat.newInstance(
+                                        sensorModeKeyPreference.getKey());
+                        editDialog.setTargetFragment(this, 0);
+                        editDialog.show(getParentFragmentManager(), "SensorModeKeyEditDialog");
+                    })
+                    .show();
         }
     }
 
@@ -1487,7 +1522,8 @@ public class SettingsActivity extends BaseActivity implements
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction()
                 .setCustomAnimations(R.anim.animate_slide_left_enter, R.anim.animate_slide_left_exit
                         , R.anim.animate_card_enter, R.anim.animate_slide_right_exit);
-        SettingsFragment fragment = new SettingsFragment();
+        PreferenceFragmentCompat fragment = preferenceFragmentCompat instanceof SensorModesSettingsFragment
+                ? new SensorModesSettingsFragment() : new SettingsFragment();
         Bundle args = new Bundle();
         args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, preferenceScreen.getKey());
         fragment.setArguments(args);
@@ -1523,6 +1559,17 @@ public class SettingsActivity extends BaseActivity implements
                 generalSettingsButton.setOnPreferenceClickListener(preference -> {
                     getParentFragmentManager().beginTransaction()
                             .replace(R.id.settings_container, new GeneralSettingsFragment())
+                            .addToBackStack(null)
+                            .commit();
+                    return true;
+                });
+            }
+
+            Preference sensorModesSettingsButton = findPreference("sensor_modes_settings_screen");
+            if (sensorModesSettingsButton != null) {
+                sensorModesSettingsButton.setOnPreferenceClickListener(preference -> {
+                    getParentFragmentManager().beginTransaction()
+                            .replace(R.id.settings_container, new SensorModesSettingsFragment())
                             .addToBackStack(null)
                             .commit();
                     return true;

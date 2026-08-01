@@ -102,7 +102,7 @@
             android:key="@string/pref_dng_black_level_key"
             android:title="@string/dng_black_level"
             app:useSimpleSummaryProvider="true"
-            android:inputType="number"
+            android:inputType="number|numberSigned"
             android:defaultValue="-1"
             android:icon="@drawable/contrast_24px"/>
 
@@ -111,7 +111,7 @@
             android:key="@string/pref_dng_white_level_key"
             android:title="@string/dng_white_level"
             app:useSimpleSummaryProvider="true"
-            android:inputType="number"
+            android:inputType="number|numberSigned"
             android:defaultValue="-1"
             android:icon="@drawable/contrast_24px"/>
 
