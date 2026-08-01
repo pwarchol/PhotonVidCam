@@ -129,10 +129,11 @@ public class RawVideoProcessor extends ProcessorBase {
             Log.d(TAG, "videoCycle: " + this + " " + image + " " + startCounter);
             int width = image.getWidth();
             int height = image.getHeight();
+            shift = 0;
             if(format == ImageFormat.RAW_SENSOR){
                 width = image.getPlanes()[0].getRowStride() / image.getPlanes()[0].getPixelStride();
-                // Crop to 16:9
-                if(PreferenceKeys.isRawVideoCrop169()) {
+                // DNG 16:10 crop is applied natively and takes priority over video 16:9.
+                if(!PhotonCamera.getSettings().isDcg1610CropOn() && PreferenceKeys.isRawVideoCrop169()) {
                     height = width * 9 / 16;
                     if (ImageSaver.SETTINGS.cropType) {
                         shift = 0;

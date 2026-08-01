@@ -547,8 +547,7 @@ public class DngCreator {
             setFrameRate((double)PhotonCamera.getSettings().videoFramrate);
         }
 
-        boolean isRawVideo = PhotonCamera.getSettings().selectedMode.equals(CameraMode.RAWVIDEO);
-        setDcg1610Crop(nativePtr, !isRawVideo && PhotonCamera.getSettings().isDcg1610CropOn());
+        setDcg1610Crop(nativePtr, PhotonCamera.getSettings().isDcg1610CropOn());
 
         /*if (PhotonCamera.getSettings().gpsLocation && PhotonCamera.gpsLocation != null) {
             double lat = PhotonCamera.gpsLocation.getLatitude();

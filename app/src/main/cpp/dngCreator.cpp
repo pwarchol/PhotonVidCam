@@ -1300,24 +1300,42 @@ public:
             void *raw = env->GetDirectBufferAddress(rawData);
             uint8_t* input = static_cast<uint8_t*>(raw) + offset;
 
+            uint16_t* croppedInput = nullptr;
             uint16_t* binnedInput = nullptr;
-            const uint16_t* packInput = reinterpret_cast<const uint16_t*>(input);
+            const void* processingInput = input;
+            int processingWidth = creator->metadata.original_width;
+            int processingHeight = creator->metadata.original_height;
+            const uint16_t* packInput = reinterpret_cast<const uint16_t*>(processingInput);
             size_t numSamples = static_cast<size_t>(creator->metadata.width) *
                                 static_cast<size_t>(creator->metadata.height);
 
-            if (creator->metadata.binning && creator->metadata.original_width > 0) {
+            if (creator->metadata.dcg_16_10_crop && processingWidth > 0 && processingHeight > 0) {
+                int cropWidth;
+                int cropHeight;
+                if (creator->calculate1610Crop(
+                        processingWidth, processingHeight, cropWidth, cropHeight)) {
+                    croppedInput = creator->cropTopLeft(
+                        processingInput, processingWidth, cropWidth, cropHeight);
+                    processingInput = croppedInput;
+                    processingWidth = cropWidth;
+                    processingHeight = cropHeight;
+                    packInput = croppedInput;
+                }
+            }
+
+            if (creator->metadata.binning && processingWidth > 0 && processingHeight > 0) {
                 int binnedW, binnedH;
                 binnedInput = creator->metadata.quad_bayer
                     ? creator->applyQuadBayerBinning(
-                        input,
-                        creator->metadata.original_width,
-                        creator->metadata.original_height,
+                        processingInput,
+                        processingWidth,
+                        processingHeight,
                         binnedW, binnedH,
                         creator->metadata.binning_uses_average)
                     : creator->applyBayerBinning(
-                        input,
-                        creator->metadata.original_width,
-                        creator->metadata.original_height,
+                        processingInput,
+                        processingWidth,
+                        processingHeight,
                         binnedW, binnedH,
                         creator->metadata.binning_uses_average);
                 packInput  = binnedInput;
@@ -1333,6 +1351,9 @@ public:
 
             if (binnedInput) {
                 delete[] binnedInput;
+            }
+            if (croppedInput) {
+                delete[] croppedInput;
             }
 
             const char *pathStr = env->GetStringUTFChars(path, nullptr);

@@ -103,8 +103,8 @@
     <string name="sensor_mode_dng_black_level">Sensor Mode DNG Black Level</string>
     <string name="sensor_mode_dng_white_level">Sensor Mode DNG White Level</string>
     <string name="sensor_mode_cfa">Sensor Mode Bayer Filter Pattern</string>
-    <string name="dcg_16_10_crop">Sensor Mode Photo DNG 16:10 Crop</string>
-    <string name="dcg_16_10_crop_summary">Always crop photo DNG output to 16:10; does not affect RAW video</string>
+    <string name="dcg_16_10_crop">Sensor Mode DNG 16:10 Crop</string>
+    <string name="dcg_16_10_crop_summary">Always crop photo and RAW video DNG output to 16:10</string>
     <string name="sensor_mode_configuration_missing">Sensor Mode KEY and VALUE are not configured</string>
     <string name="sensor_mode_key_not_supported">Sensor Mode KEY is invalid or not supported by this camera</string>
     <string name="pref_save_per_lens_string">Per Lens Settings</string>
